@@ -1,8 +1,13 @@
 -- Implement the creation of a menu using telescope
+-- Display a list of items i.e files and interact with them by selecting and searching
 local pickers = require 'telescope.pickers'
+-- Provide a list of selectable items with this function
 local finders = require 'telescope.finders'
+-- This function matches and ranks input to the list of items you have
 local sorters = require 'telescope.sorters'
+-- This function tells telescope what to do when the user selects an Item
 local actions = require 'telescope.actions'
+-- Access selected items, typed input and or raw data from tables. This is the bridge between the UI and the Lua logic
 local action_state = require 'telescope.actions.state'
 
 -- Define menu options
@@ -43,12 +48,12 @@ local function create_Menu()
       finder = finders.new_table {
         results = options,
       },
-      sorter = sorters.get_generic_fuzzy_sorter(),
+      sorter = sorters.get_fzy_sorter(),
       attach_mappings = function(prompt_bufnr, map)
         actions.select_default:replace(function()
           actions.close(prompt_bufnr)
           local selection = action_state.get_selected_entry()
-          print(vim.inspect(selection))
+          -- print(vim.inspect(selection))
           if not selection then
             return
           end
