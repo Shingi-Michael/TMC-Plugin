@@ -12,8 +12,9 @@ local action_state = require 'telescope.actions.state'
 
 -- Define menu options
 local options = {
-  '1: Test',
-  '2: Submit',
+  '❓Help',
+  '🧪 Test',
+  '✅ Submit',
 }
 
 vim.api.nvim_create_user_command('Ttmc', function()
@@ -40,6 +41,18 @@ vim.api.nvim_create_user_command('Stmc', function()
   vim.cmd 'startinsert'
 end, { desc = 'Run TMC submit without "Process exited" message' })
 
+vim.api.nvim_create_user_command('Htmc', function()
+  local tmc_binary = vim.env.HOME .. '/tmc-cli-rust-x86_64-apple-darwin-v1.1.2'
+  local exercise_path = vim.fn.expand '%:p:h:h'
+
+  -- Use 'exec' to replace the shell with the command, preventing "Process exited" message
+  local shell_cmd = string.format('exec %s --help "%s" && echo "" && echo "Press ENTER twice to exit..." && read && read', tmc_binary, exercise_path)
+
+  vim.cmd 'split'
+  vim.cmd('terminal ' .. shell_cmd)
+  vim.cmd 'startinsert'
+end, { desc = 'Run TMC submit without "Process exited" message' })
+
 -- Create a function for the menu
 local function create_Menu()
   pickers
@@ -48,7 +61,11 @@ local function create_Menu()
       finder = finders.new_table {
         results = options,
       },
-      sorter = sorters.get_fzy_sorter(),
+      GetSelectionrter = sorters.get_fzy_sorter(),
+      layout_config = {
+        width = 0.4,
+        height = 0.3,
+      },
       attach_mappings = function(prompt_bufnr, map)
         actions.select_default:replace(function()
           actions.close(prompt_bufnr)
@@ -58,10 +75,12 @@ local function create_Menu()
             return
           end
 
-          if selection.value == '1: Test' then
+          if selection.value == '🧪 Test' then
             vim.cmd 'Ttmc'
-          elseif selection.value == '2: Submit' then
+          elseif selection.value == '✅ Submit' then
             vim.cmd 'Stmc'
+          elseif selection.value == '❓Help' then
+            vim.cmd 'Htmc'
           end
         end)
         return true
