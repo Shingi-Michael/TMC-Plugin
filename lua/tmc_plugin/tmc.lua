@@ -1,16 +1,17 @@
 -- Implement the creation of a menu using telescope
 -- Display a list of items i.e files and interact with them by selecting and searching
-local pickers = require("telescope.pickers")
+local pickers      = require("telescope.pickers")
 -- Provide a list of selectable items with this function
-local finders = require("telescope.finders")
+local finders      = require("telescope.finders")
 -- This function matches and ranks input to the list of items you have
-local sorters = require("telescope.sorters")
+local sorters      = require("telescope.sorters")
 -- This function tells telescope what to do when the user selects an Item
-local actions = require("telescope.actions")
+local actions      = require("telescope.actions")
 -- Access selected items, typed input and or raw data from tables. This is the bridge between the UI and the Lua logic
 local action_state = require("telescope.actions.state")
+local func         = require("vim.func")
 
-local tmc = require("tmc_plugin")
+local tmc          = require("tmc_plugin")
 
 local function get_binary_path()
     return tmc._config.binary_path or vim.env.HOME .. "/tmc-cli-rust-x86_64-apple-darwin-v1.1.2"
@@ -25,7 +26,7 @@ local options = {
 
 vim.api.nvim_create_user_command("Ttmc", function()
     local tmc_binary = get_binary_path()
-    local exercise_path = vim.fn.expand("%:p:h:h")
+    local exeircise_path = vim.fn.expand("%:p:h:h")
 
     -- Use 'exec' to replace the shell with the command, preventing "Process exited" message
     local shell_cmd = string.format(
@@ -71,6 +72,41 @@ vim.api.nvim_create_user_command("Htmc", function()
     vim.cmd("startinsert")
 end, { desc = 'Run TMC submit without "Process exited" message' })
 
+-- Create a function that has access to courses and displays them in telescope
+
+local job = require 'plenary.job'
+
+local function list_courses()
+    job:new({
+        command = vim.env.HOME .. "/tmc-cli-rust-x86_64-apple-darwin-v1.1.2",
+        args = { 'courses' },
+        enable_recording = true,
+        on_exit = function(j)
+            local stderr = j:stderr_result()
+            local stdout = j:result()
+
+            clean_courses = {}
+
+            --for _, line in ipairs(stdout) do
+            --    print(vim.inspect(line))
+            --end
+
+            for _, line in ipairs(stderr) do
+                if line ~= "" then
+                    table.insert(clean_courses, line)
+                end
+            end
+
+            print(vim.inspect(clean_courses))
+        end,
+    }):start()
+end
+
+vim.api.nvim_create_user_command('Tlist', function()
+    list_courses()
+end, {})
+
+
 -- Create a function for the menu
 local function create_Menu()
     pickers
@@ -99,6 +135,8 @@ local function create_Menu()
                         vim.cmd("Stmc")
                     elseif selection.value == "❓Help" then
                         vim.cmd("Htmc")
+                    elseif selection.value == "📒Courses" then
+                        vim.cmd("Tlist")
                     end
                 end)
                 return true
