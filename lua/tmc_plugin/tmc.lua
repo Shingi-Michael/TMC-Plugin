@@ -22,6 +22,8 @@ local options = {
     "❓Help",
     "🧪 Test",
     "✅ Submit",
+    "📒Courses",
+
 }
 
 vim.api.nvim_create_user_command("Ttmc", function()
@@ -97,7 +99,15 @@ local function list_courses()
                 end
             end
 
-            print(vim.inspect(clean_courses))
+            vim.schedule(function()
+                pickers.new({}, {
+                    prompt_title = "Courses List",
+                    finder = finders.new_table({
+                        results = clean_courses,
+                    }),
+                    sorter = sorters.get_fzy_sorter(),
+                }):find()
+            end)
         end,
     }):start()
 end
@@ -105,7 +115,6 @@ end
 vim.api.nvim_create_user_command('Tlist', function()
     list_courses()
 end, {})
-
 
 -- Create a function for the menu
 local function create_Menu()
