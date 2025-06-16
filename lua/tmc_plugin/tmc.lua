@@ -9,7 +9,10 @@ local sorters      = require("telescope.sorters")
 local actions      = require("telescope.actions")
 -- Access selected items, typed input and or raw data from tables. This is the bridge between the UI and the Lua logic
 local action_state = require("telescope.actions.state")
+
 local func         = require("vim.func")
+
+local Job          = require("plenary.job")
 
 local tmc          = require("tmc_plugin")
 
@@ -23,12 +26,13 @@ local options = {
     "🧪 Test",
     "✅ Submit",
     "📒Courses",
+    "🔻Download Courses",
 
 }
 
 vim.api.nvim_create_user_command("Ttmc", function()
     local tmc_binary = get_binary_path()
-    local exeircise_path = vim.fn.expand("%:p:h:h")
+    local exercise_path = vim.fn.expand("%:p:h:h")
 
     -- Use 'exec' to replace the shell with the command, preventing "Process exited" message
     local shell_cmd = string.format(
@@ -76,10 +80,68 @@ end, { desc = 'Run TMC submit without "Process exited" message' })
 
 -- Create a function that has access to courses and displays them in telescope
 
-local job = require 'plenary.job'
+local function select_course_to_download()
+    Job:new({
+        command = get_binary_path(),
+        args = { 'courses' },
+        enable_recording = true,
+        on_exit = function(j)
+            local stderr = j:stderr_result()
+            local stdout = j:result()
+
+            local courses = {}
+
+            -- stderr sometimes contains useful output, so we check both
+            for _, line in ipairs(stdout) do
+                if line ~= "" then
+                    table.insert(courses, line)
+                end
+            end
+            for _, line in ipairs(stderr) do
+                if line ~= "" then
+                    table.insert(courses, line)
+                end
+            end
+
+            vim.schedule(function()
+                pickers.new({}, {
+                    prompt_title = "Download a Course",
+                    finder = finders.new_table({
+                        results = courses,
+                    }),
+                    sorter = sorters.get_fzy_sorter(),
+                    attach_mappings = function(prompt_bufnr, map)
+                        actions.select_default:replace(function()
+                            actions.close(prompt_bufnr)
+                            local selection = action_state.get_selected_entry()
+
+                            if selection then
+                                local course_name = selection.value
+                                local shell_cmd = string.format(
+                                    'exec %s download --course "%s" && echo "" && echo "Press ENTER to exit..." && read && read',
+                                    get_binary_path(),
+                                    course_name
+                                )
+                                vim.cmd("split")
+                                vim.cmd("terminal " .. shell_cmd)
+                                vim.cmd("startinsert")
+                            end
+                        end)
+                        return true
+                    end,
+                }):find()
+            end)
+        end,
+    }):start()
+end
+
+vim.api.nvim_create_user_command('Dlist', function()
+    select_course_to_download()
+end, {})
+
 
 local function list_courses()
-    job:new({
+    Job:new({
         command = vim.env.HOME .. "/tmc-cli-rust-x86_64-apple-darwin-v1.1.2",
         args = { 'courses' },
         enable_recording = true,
@@ -146,6 +208,8 @@ local function create_Menu()
                         vim.cmd("Htmc")
                     elseif selection.value == "📒Courses" then
                         vim.cmd("Tlist")
+                    elseif selection.value == "🔻Download Courses" then
+                        vim.cmd("Dlist")
                     end
                 end)
                 return true
