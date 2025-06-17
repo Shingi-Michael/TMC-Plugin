@@ -27,6 +27,8 @@ local options = {
     "✅ Submit",
     "📒Courses",
     "🔻Download Courses",
+    "🔐Login",
+    "🚪Logout",
 
 }
 
@@ -45,6 +47,36 @@ vim.api.nvim_create_user_command("Ttmc", function()
     vim.cmd("terminal " .. shell_cmd)
     vim.cmd("startinsert")
 end, { desc = 'Run TMC submit without "Process exited" message' })
+
+-- Login feature for initial tmc sign-in.
+-- Use tmc binary only of login
+vim.api.nvim_create_user_command("Ltmc", function()
+    local tmc_binary = get_binary_path()
+
+    local shell_cmd = string.format(
+        'exec %s login && echo "" && echo "Press ENTER twice to exit..." && read && read',
+        tmc_binary
+    )
+
+    vim.cmd("split")
+    vim.cmd("terminal " .. shell_cmd)
+    vim.cmd("startinsert")
+end, { desc = 'Run TMC login without "Process exited" message' })
+
+-- Logout feature for tmc
+-- Use tmc binary only for logout
+vim.api.nvim_create_user_command("Otmc", function()
+    local tmc_binary = get_binary_path()
+
+    local shell_cmd = string.format(
+        'exec %s logout && echo "" && echo "Press ENTER twice to exit..." && read && read',
+        tmc_binary
+    )
+
+    vim.cmd("split")
+    vim.cmd("terminal " .. shell_cmd)
+    vim.cmd("startinsert")
+end, { desc = 'Run TMC logout without "Process exited" message' })
 
 vim.api.nvim_create_user_command("Stmc", function()
     local tmc_binary = get_binary_path()
@@ -151,10 +183,6 @@ local function list_courses()
 
             clean_courses = {}
 
-            --for _, line in ipairs(stdout) do
-            --    print(vim.inspect(line))
-            --end
-
             for _, line in ipairs(stderr) do
                 if line ~= "" then
                     table.insert(clean_courses, line)
@@ -189,13 +217,13 @@ local function create_Menu()
             sorter = sorters.get_fzy_sorter(),
             layout_config = {
                 width = 0.4,
-                height = 0.3,
+                height = 0.45,
             },
             attach_mappings = function(prompt_bufnr, map)
                 actions.select_default:replace(function()
                     actions.close(prompt_bufnr)
                     local selection = action_state.get_selected_entry()
-                    -- print(vim.inspect(selection))
+
                     if not selection then
                         return
                     end
@@ -210,6 +238,10 @@ local function create_Menu()
                         vim.cmd("Tlist")
                     elseif selection.value == "🔻Download Courses" then
                         vim.cmd("Dlist")
+                    elseif selection.value == "🔐 Login" then
+                        vim.cmd("Ltmc")
+                    elseif selection.value == "🚪Logout" then
+                        vim.cmd("Otmc")
                     end
                 end)
                 return true
