@@ -11,11 +11,17 @@
 
 ```lua
 {
-  "Shingi-Michael/TMC-Plugin",
-  event = "VeryLazy",
-  dependencies = {
-    "nvim-telescope/nvim-telescope"
-  },
+    "Shingi-Michael/TMC-Plugin",
+    dependencies = {
+        "nvim-lua/plenary.nvim",
+        "nvim-telescope/telescope.nvim",
+    },
+    config = function()
+        require("tmc_plugin").setup({
+            -- Users put THEIR specific path to the TMC binary here
+            bin = "/path/to/their/tmc-cli-binary" 
+        })
+    end,
 }
 
 ```
