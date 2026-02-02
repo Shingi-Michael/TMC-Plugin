@@ -13,7 +13,7 @@ A Neovim interface for the Test My Code (TMC) framework, allowing you to manage 
 ### Dependencies
 - [nvim-telescope/telescope.nvim](https://github.com/nvim-telescope/nvim-telescope)
 - [nvim-lua/plenary.nvim](https://github.com/nvim-lua/plenary.nvim)
-- **TMC CLI:** Ensure you have the official [TMC CLI binary](https://github.com/testmycode/tmc-cli-rust) installed.
+- **TMC CLI:** Ensure you have the official [TMC CLI binary](https://github.com/rage/tmc-cli-rust) installed.
 
 ### Installation
 
