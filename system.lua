@@ -1,16 +1,16 @@
 local config = require("tmc_plugin.config")
 local M = {}
 
--- define the runner logic
-function M.run(args, on_finish)
-    local new_cmd_tbl = { config.options.bin }
+function M.run(args, on_finish, cwd)
+    local cmd = { config.bin or "tmc" }
+    for _, v in ipairs(args) do table.insert(cmd, v) end
 
-    -- cycle through the arguments provided and insert them in a new table
-    for _, v in ipairs(args) do
-        table.insert(new_cmd_tbl, v)
-    end
-
-    vim.system(new_cmd_tbl, { text = true }, function(result)
+    -- We use vim.env to pass the current environment to the child process
+    vim.system(cmd, {
+        text = true,
+        cwd = cwd,
+        env = vim.fn.environ()
+    }, function(result)
         if on_finish then
             on_finish(result)
         end
