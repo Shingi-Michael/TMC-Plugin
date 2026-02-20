@@ -5,22 +5,21 @@ function M.setup(opts)
     opts = opts or {}
     config.bin = opts.bin or "tmc"
 
-    -- Register all commands from your README
     local commands = {
-        TmcDoctor  = "doctor",
-        TmcLogin   = "login",
+        TmcMenu    = "open_main_menu",
         TmcTest    = "test",
         TmcSubmit  = "submit",
-        TmcCourses = "get_courses",
+        TmcStatus  = "show_progress_flow",
+        TmcCourses = "start_download_flow",
+        TmcDoctor  = "doctor",
+        TmcLogin   = "login",
     }
 
     for cmd_name, api_func in pairs(commands) do
         vim.api.nvim_create_user_command(cmd_name, function()
             require("tmc_plugin.api")[api_func]()
-        end, {})
+        end, { desc = "TMC Command" })
     end
-
-    print("TMC Ready: Run :TmcDoctor to check your setup.")
 end
 
 return M

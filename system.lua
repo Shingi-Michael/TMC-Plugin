@@ -4,16 +4,12 @@ local M = {}
 function M.run(args, on_finish, cwd)
     local cmd = { config.bin or "tmc" }
     for _, v in ipairs(args) do table.insert(cmd, v) end
-
-    -- We use vim.env to pass the current environment to the child process
     vim.system(cmd, {
         text = true,
         cwd = cwd,
         env = vim.fn.environ()
     }, function(result)
-        if on_finish then
-            on_finish(result)
-        end
+        if on_finish then on_finish(result) end
     end)
 end
 
