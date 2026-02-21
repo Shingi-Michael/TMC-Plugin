@@ -310,6 +310,7 @@ local function detect_exercise()
     local rest = path:sub(#base + 2)
     local course_name, exercise_name = rest:match("^([^/\\]+)[/\\]([^/\\]+)")
     if not course_name or not exercise_name then return nil end
+
     for _, c in ipairs(_course_cache) do
         if c.name == course_name then
             for i, ex in ipairs(c.raw_exercises) do
@@ -323,7 +324,8 @@ local function detect_exercise()
                      index = nil, exercises = c.raw_exercises }
         end
     end
-    return nil  -- course not in cache at all
+    -- Course not in cache at all, but we DO know the identifiers
+    return { course = course_name, name = exercise_name }
 end
 
 -- Find the first source file inside <exercise_dir>/src/ (recursive).
@@ -380,6 +382,16 @@ local function navigate_to_exercise(ctx, target_ex)
     end
 
     open_exercise()
+end
+
+-- Open instructions for the current exercise
+function M.instructions()
+    local ctx = detect_exercise()
+    if not ctx or not ctx.name then
+        ui.notify("Not in a TMC exercise directory — open an exercise file first", "warn")
+        return
+    end
+    require("tmc_plugin.instructions").fetch_and_show(ctx.name)
 end
 
 -- Navigate to the exercise at (current_index + direction) in the course list.
