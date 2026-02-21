@@ -93,6 +93,8 @@ function M.get_courses(on_select, force_refresh)
                 completed_count = completed_count + 1
 
                 if completed_count == #names then
+                    -- Sort alphabetically so the picker is deterministic
+                    table.sort(results, function(a, b) return a.name < b.name end)
                     _course_cache = results
                     save_to_disk()
                     vim.schedule(function() on_select(results) end)
@@ -128,6 +130,7 @@ end
 
 function M.open_dashboard()
     M.get_courses(function(data)
+        if #data == 0 then return end  -- get_courses already notified the user
         local max_len = 0
         for _, c in ipairs(data) do if #c.name > max_len then max_len = #c.name end end
         ui.show_menu(data, "Select Course", "course", function(choice)
@@ -137,16 +140,20 @@ function M.open_dashboard()
 end
 
 function M.test()
+    local root  = get_project_root()
+    local base  = vim.fn.expand(config.exercises_dir)
+    if root:sub(1, #base) ~= base then
+        ui.notify("Not in a TMC exercise directory — open an exercise file first", "warn")
+        return
+    end
     local bufnr = vim.api.nvim_get_current_buf()
     ui.clear_status(bufnr)
     ui.notify("Testing...", "info")
     system.run({ "test" }, function(obj)
         vim.schedule(function()
             local raw = (obj.stdout .. obj.stderr):lower()
-            -- tmc test prints "Failed 'TestName'" on failure (note: space not colon)
             local has_failure = raw:match("failed '") ~= nil
                 or raw:match("compilation failed") ~= nil
-            -- Parse "Test results: X/Y tests passed"
             local p_str, t_str = raw:match("test results: (%d+)/(%d+)")
             local p, t = tonumber(p_str), tonumber(t_str)
             local test_ratio_ok = p and t and t > 0 and p == t
@@ -161,10 +168,16 @@ function M.test()
             ui.show_virtual_status(bufnr, passed and "Tests Passed" or "Tests Failed", passed)
             if not passed then ui.show_log_window(obj.stdout .. obj.stderr) end
         end)
-    end, get_project_root())
+    end, root)
 end
 
 function M.submit()
+    local root = get_project_root()
+    local base = vim.fn.expand(config.exercises_dir)
+    if root:sub(1, #base) ~= base then
+        ui.notify("Not in a TMC exercise directory — open an exercise file first", "warn")
+        return
+    end
     local bufnr = vim.api.nvim_get_current_buf()
     ui.clear_status(bufnr)
     ui.notify("Submitting...", "info")
@@ -207,7 +220,7 @@ function M.submit()
     end
 
     vim.fn.jobstart({ config.bin or "tmc", "submit" }, {
-        cwd = get_project_root(),
+        cwd = root,
         -- No PTY: plain text output, no ANSI codes to deal with
         env = user_env,
         on_stdout = function(_, data)
@@ -263,7 +276,8 @@ function M.submit()
 end
 
 function M.login()
-    vim.cmd("split | term export EDITOR=cat && " .. config.bin .. " login")
+    -- Use `env` prefix for cross-shell compatibility (bash, zsh, fish, etc.)
+    vim.cmd("split | term env EDITOR=cat " .. (config.bin or "tmc") .. " login")
 end
 
 function M.doctor()
