@@ -6,7 +6,7 @@ local config  = require("tmc_plugin.config")
 local system  = require("tmc_plugin.system")
 local _menu_win = nil   -- tracks the single open menu window
 
-local W = 52  -- total window width including the two border chars
+local W = 58  -- total window width including the two border chars
 
 -- ─── Box drawing ─────────────────────────────────────────────────────────────
 
@@ -48,8 +48,9 @@ local ITEMS = {
     { type = "item",  icon = "↑",  label = "Submit",      desc = "Submit exercise to TMC",       action = "submit" },
     { type = "spacer" },
     { type = "group", label = "Account" },
-    { type = "item",  icon = "󰍋",  label = "Login",       desc = "Sign in to TMC",              action = "login" },
-    { type = "item",  icon = "✔",  label = "Doctor",      desc = "Check connection & auth",     action = "doctor" },
+    { type = "item",  icon = "󰍋",   label = "Login",         desc = "Sign in to TMC",              action = "login" },
+    { type = "item",  icon = "📖",   label = "Instructions",  desc = "Show exercise instructions",  action = "instructions" },
+    { type = "item",  icon = "✔",   label = "Doctor",        desc = "Check connection & auth",     action = "doctor" },
 }
 
 -- ─── Buffer content builder ───────────────────────────────────────────────────
@@ -91,8 +92,16 @@ local function build(auth_status, course)
             table.insert(lines, sep())
         elseif item.type == "item" then
             local line_idx = #lines
-            local content = string.format("     %s  %-11s %s",
-                item.icon, item.label, item.desc)
+
+            local label_len = vim.fn.strdisplaywidth(item.label)
+            local icon_len  = vim.fn.strdisplaywidth(item.icon)
+            
+            local icon_pad = string.rep(" ", math.max(1, 4 - icon_len))
+            local label_pad = string.rep(" ", math.max(1, 15 - label_len))
+            
+            local content = string.format("     %s%s%s%s %s",
+                item.icon, icon_pad, item.label, label_pad, item.desc)
+            
             table.insert(lines, box(content))
             table.insert(selectables, {
                 line     = line_idx,
@@ -106,14 +115,15 @@ local function build(auth_status, course)
 
     table.insert(lines, box(""))
     table.insert(lines, mid())
-    table.insert(lines, box("  j/k Navigate   Enter Select   q Close"))
+    table.insert(lines, box("  j/k Navigate          Enter Select           q Close  "))
     table.insert(lines, bot())
 
-    -- Return indicator so the caller can compute its byte range for highlighting
     return lines, selectables, group_lines, indicator
 end
 
--- ─── Open ─────────────────────────────────────────────────────────────────────
+M._test_build = build
+
+-- ─── UI rendering ─────────────────────────────────────────────────────────────
 
 function M.open()
     -- If a menu is already open, close it first (prevents stacking)

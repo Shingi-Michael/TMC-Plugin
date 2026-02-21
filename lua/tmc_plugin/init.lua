@@ -15,6 +15,7 @@ function M.setup(opts)
         TmcTest      = "test",
         TmcSubmit    = "submit",
         TmcDoctor    = "doctor",
+        TmcInstructions = "instructions",
         TmcLogin     = "login",
         TmcNext      = "next",
         TmcPrev      = "prev",

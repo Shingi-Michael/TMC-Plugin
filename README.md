@@ -103,6 +103,7 @@ All commands are registered by `setup()`. If a command is not found, check that 
 | `:TmcSubmit` | Submit the current exercise with a live log window |
 | `:TmcNext` | Navigate to the next exercise in the current course |
 | `:TmcPrev` | Navigate to the previous exercise in the current course |
+| `:TmcInstructions` | Display instructions for the active exercise inside a Neovim split |
 | `:TmcDoctor` | Full diagnostics report — binary, auth, cache, context, config |
 | `:TmcLogin` | Open a terminal split to run `tmc login` |
 
