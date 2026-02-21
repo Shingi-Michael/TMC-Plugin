@@ -103,10 +103,11 @@ function M.fetch_and_show(tmcname)
     end
     part = tonumber(part)
     
+    -- NOTE: base_url is currently fixed to programming-25.mooc.fi.
+    -- If you need to support other MOOC.fi courses, expose this via config.
     local base_url = "https://programming-25.mooc.fi"
     local part_url = string.format("%s/page-data/part-%d/page-data.json", base_url, part)
     
-    -- Start async fetching and parsing
     vim.notify("Fetching instructions for " .. tmcname .. "...", vim.log.levels.INFO)
     vim.system({"curl", "-sL", part_url}, function(obj)
         if obj.code ~= 0 then
@@ -128,13 +129,7 @@ function M.fetch_and_show(tmcname)
             end
         end
         
-        -- To avoid blocking Neovim completely, but also since curl waits inside lua async are weird,
-        -- we could fire off all fetches async. For simplicity and robustness, we do sequential sync fetches
-        -- inside a fast async coroutine or vim.schedule loop, or vim.system async chain.
-        -- Since we're in a vim.system callback already, blocking here isn't great. Let's use `curl` synchronously inside a system thread? No, `vim.system` callback is executed in Neovim's main loop via uv poll, wait, no, it's executed in main thread by default if not careful, actually `vim.system` callback runs in main loop.
-        -- We should wrap this in `coroutine` using `vim.schedule`? No, simpler to just run a background script if needed, or chain them.
-        
-        -- Since we are already async in Neovim, we can't easily wait. Let's chain vim.system calls.
+        -- Chain async vim.system calls sequentially through each page until the exercise is found.
         local function check_next_path(index)
             if index > #paths then
                 vim.schedule(function() vim.notify("Instructions for " .. tmcname .. " not found on MOOC.fi", vim.log.levels.WARN) end)
