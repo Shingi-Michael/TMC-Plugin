@@ -77,8 +77,13 @@ require("tmc_plugin").setup({
 
   -- Root directory where tmc-cli stores downloaded exercises.
   -- Default (macOS): ~/Library/Application Support/tmc/tmc_cli_rust
-  -- Change this only if your tmc-cli uses a different location.
   exercises_dir = "~/Library/Application Support/tmc/tmc_cli_rust",
+
+  -- Base URL of the MOOC.fi course site used by :TmcInstructions.
+  -- Default: https://programming-25.mooc.fi
+  -- Change this when working with a different course year, e.g.:
+  --   mooc_url = "https://programming-24.mooc.fi"
+  mooc_url = "https://programming-25.mooc.fi",
 })
 ```
 
@@ -88,6 +93,7 @@ require("tmc_plugin").setup({
 |---|---|---|---|
 | `bin` | string | `"tmc"` | Path or name of the TMC CLI executable |
 | `exercises_dir` | string | `~/Library/Application Support/tmc/tmc_cli_rust` | Root directory where tmc-cli downloads exercises |
+| `mooc_url` | string | `https://programming-25.mooc.fi` | MOOC.fi base URL used by `:TmcInstructions` |
 
 ---
 
