@@ -97,11 +97,61 @@ All commands are registered by `setup()`. If a command is not found, check that 
 
 | Command | Description |
 |---|---|
+| `:TmcMenu` | Open the floating command palette (recommended entry point) |
 | `:TmcDashboard` | Open the course selector → exercise dashboard |
-| `:TmcTest` | Run `tmc test` in the current project root |
+| `:TmcTest` | Run `tmc test` in the current exercise directory |
 | `:TmcSubmit` | Submit the current exercise with a live log window |
 | `:TmcDoctor` | Check TMC authentication / connectivity |
 | `:TmcLogin` | Open a terminal split to run `tmc login` |
+
+> **Note:** `:TmcTest` and `:TmcSubmit` require the current buffer to be inside the
+> configured `exercises_dir`. Opening them from an unrelated file shows a warning
+> instead of running the wrong command.
+
+---
+
+## Menu (`:TmcMenu`)
+
+The recommended entry point. Opens a centered floating window:
+
+```
+╭────────────────────────────────────────────────────╮
+│  ⚡ TMC Plugin                                      │
+│  ✓ Connected  •  mooc-programming-25               │
+├────────────────────────────────────────────────────┤
+│                                                    │
+│  Exercises                                         │
+│  ────────────────────────────────────────────────  │
+│  ▶  󰙨  Dashboard   Browse & manage exercises       │
+│     ✓  Test        Run tests in current exercise   │
+│     ↑  Submit      Submit exercise to TMC          │
+│                                                    │
+│  Account                                           │
+│  ────────────────────────────────────────────────  │
+│     󰍋  Login       Sign in to TMC                  │
+│     ✔  Doctor      Check connection & auth         │
+│                                                    │
+├────────────────────────────────────────────────────┤
+│  j/k Navigate   Enter Select   q Close             │
+╰────────────────────────────────────────────────────╯
+```
+
+**Header behaviour:**
+- Course name is detected **instantly** from the current file path — no network call
+- Auth status (`✓ Connected` / `✗ Auth Required`) is checked async and updates in place
+- `✓ Connected` lights up **green**, `✗ Auth Required` lights up **red**
+- When not authenticated, the cursor auto-focuses the **Login** entry
+
+**Navigation:**
+
+| Key | Action |
+|---|---|
+| `j` / `k` | Move selection up/down |
+| `1`–`5` | Jump directly to that item and execute |
+| `<Enter>` | Execute selected command |
+| `q` / `<Esc>` | Close menu |
+
+The menu closes automatically if you navigate to another window (`<C-w>w`, etc.).
 
 ---
 
@@ -172,6 +222,12 @@ require("tmc_plugin").setup({
   bin = vim.fn.expand("~/tmc-cli-rust-x86_64-apple-darwin-v1.1.2"),
 })
 ```
+
+### `Not in a TMC exercise directory`
+
+`:TmcTest` and `:TmcSubmit` check that the current file is inside `exercises_dir`
+before running. If you see this warning, navigate to a file inside your exercise
+directory first, then run the command again.
 
 ### `Exercise not downloaded`
 
