@@ -329,4 +329,30 @@ function M.setup_keymaps(buf)
     end, opts)
 end
 
+-- Separate namespace so the nav flash doesn't disturb dashboard render highlights
+local NS_NAV = vim.api.nvim_create_namespace("tmc_dashboard_nav")
+
+-- Called by :TmcNext / :TmcPrev after opening a new exercise.
+-- Scrolls the dashboard (if open) to the exercise line and flashes a highlight.
+function M.scroll_to_exercise(exercise_name)
+    if not dashboard_buf or not vim.api.nvim_buf_is_valid(dashboard_buf) then return end
+    local win = vim.fn.bufwinid(dashboard_buf)
+    if win == -1 then return end  -- dashboard buffer exists but no window is showing it
+    for _, ex in ipairs(exercise_data) do
+        if ex.name == exercise_name then
+            -- ex.line is 0-based; nvim_win_set_cursor wants 1-based
+            pcall(vim.api.nvim_win_set_cursor, win, { ex.line + 1, 0 })
+            -- Flash highlight on the exercise row
+            vim.api.nvim_buf_clear_namespace(dashboard_buf, NS_NAV, 0, -1)
+            vim.api.nvim_buf_add_highlight(dashboard_buf, NS_NAV, "CursorLine", ex.line, 0, -1)
+            vim.defer_fn(function()
+                if vim.api.nvim_buf_is_valid(dashboard_buf) then
+                    vim.api.nvim_buf_clear_namespace(dashboard_buf, NS_NAV, 0, -1)
+                end
+            end, 1500)
+            return
+        end
+    end
+end
+
 return M
