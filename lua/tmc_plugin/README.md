@@ -24,6 +24,7 @@ require("tmc_plugin").setup({
 | `config.lua` | Shared config table (`bin`, `exercises_dir`) |
 | `api.lua` | Public API — courses, exercises, test, submit, download, login, doctor |
 | `dashboard.lua` | Interactive exercise dashboard (buffer + keymaps) |
+| `doctor.lua` | Diagnostics report (`:TmcDoctor`) — 7 checks, async updates |
 | `menu.lua` | Floating command palette (`:TmcMenu`) |
 | `system.lua` | Thin async wrapper around `vim.system` |
 | `ui.lua` | Progress bars, virtual text, log windows, notify helper |
@@ -55,7 +56,7 @@ require("tmc_plugin").setup({
 | `:TmcSubmit` | `api.submit()` | Submit with a live streaming log window |
 | `:TmcNext` | `api.next()` | Open next exercise, download prompt if needed |
 | `:TmcPrev` | `api.prev()` | Open previous exercise, boundary message at ends |
-| `:TmcDoctor` | `api.doctor()` | Check TMC auth / connectivity |
+| `:TmcDoctor` | `doctor.run()` | Full diagnostics report (7 checks) |
 | `:TmcLogin` | `api.login()` | Terminal split for `tmc login` |
 
 ---

@@ -103,7 +103,7 @@ All commands are registered by `setup()`. If a command is not found, check that 
 | `:TmcSubmit` | Submit the current exercise with a live log window |
 | `:TmcNext` | Navigate to the next exercise in the current course |
 | `:TmcPrev` | Navigate to the previous exercise in the current course |
-| `:TmcDoctor` | Check TMC authentication / connectivity |
+| `:TmcDoctor` | Full diagnostics report — binary, auth, cache, context, config |
 | `:TmcLogin` | Open a terminal split to run `tmc login` |
 
 > **Note:** `:TmcTest` and `:TmcSubmit` require the current buffer to be inside the
@@ -180,6 +180,44 @@ Navigate between exercises without leaving Neovim.
 
 ---
 
+## Diagnostics (`:TmcDoctor`)
+
+Opens a structured diagnostic report in a bottom split (press `q` to close):
+
+```
+TMC Doctor — 2026-02-21 12:01
+======================================
+
+  [1] Binary
+  ──────────────────────────────────────────────────────
+  ✓  Found:   ~/tmc-cli-rust-x86_64-apple-darwin-v1.1.2
+  ✓  Version: tmc-cli-rust 1.1.2
+
+  [2] Neovim
+  ──────────────────────────────────────────────────────
+  ✓  Neovim 0.10.2 (supported)
+
+  [3] Authentication
+  ──────────────────────────────────────────────────────
+  ✓  Connected to TMC server
+
+  [4] Exercises Directory  [5] Cache  [6] Current Context  [7] Configuration
+  ...
+```
+
+| # | Check | Speed | Outcomes |
+|---|---|---|---|
+| 1 | Binary — found + version | Async | ✓ / ✗ not found / ~ no version |
+| 2 | Neovim ≥ 0.9 | Instant | ✓ / ✗ |
+| 3 | TMC server authentication | Async | ✓ connected / ✗ not auth / ? no network |
+| 4 | Exercises directory exists + folder count | Instant | ✓ / ✗ / ~ empty |
+| 5 | Local cache (courses · exercises) | Instant | ✓ / ~ empty / ✗ corrupt |
+| 6 | Current file context (course, exercise, on disk, in cache) | Instant | ✓ / ~ |
+| 7 | Resolved config (`bin`, `exercises_dir`) | Instant | info only |
+
+Checks 1 and 3 run async and update in-place when results arrive — the report appears instantly and fills in.
+
+---
 
 `:TmcDashboard` opens a course picker, then renders an exercise list in a vertical split:
 
