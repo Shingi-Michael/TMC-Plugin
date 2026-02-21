@@ -205,8 +205,22 @@ local function dashboard_test(ex)
     system.run({ "test" }, function(obj)
         vim.schedule(function()
             local raw = (obj.stdout .. obj.stderr):lower()
-            local passed = obj.code == 0 or raw:match("all tests passed") ~= nil
-            local label = ex.name .. " – " .. (passed and "Tests Passed" or "Tests Failed")
+            -- tmc test prints "Failed 'TestName'" on failure (space, not colon)
+            local has_failure = raw:match("failed '") ~= nil
+                or raw:match("compilation failed") ~= nil
+            -- Parse "Test results: X/Y tests passed"
+            local p_str, t_str = raw:match("test results: (%d+)/(%d+)")
+            local p, t = tonumber(p_str), tonumber(t_str)
+            local test_ratio_ok = p and t and t > 0 and p == t
+            local passed
+            if has_failure then
+                passed = false
+            elseif raw:match("all tests passed") or test_ratio_ok then
+                passed = true
+            else
+                passed = false
+            end
+            local label = ex.name .. " — " .. (passed and "Tests Passed ✓" or "Tests Failed ✗")
             ui.notify(label, passed and "info" or "warn")
             if not passed then
                 ui.show_log_window(obj.stdout .. obj.stderr)
@@ -313,6 +327,32 @@ function M.setup_keymaps(buf)
         dashboard_buf = nil
         keymaps_set = false
     end, opts)
+end
+
+-- Separate namespace so the nav flash doesn't disturb dashboard render highlights
+local NS_NAV = vim.api.nvim_create_namespace("tmc_dashboard_nav")
+
+-- Called by :TmcNext / :TmcPrev after opening a new exercise.
+-- Scrolls the dashboard (if open) to the exercise line and flashes a highlight.
+function M.scroll_to_exercise(exercise_name)
+    if not dashboard_buf or not vim.api.nvim_buf_is_valid(dashboard_buf) then return end
+    local win = vim.fn.bufwinid(dashboard_buf)
+    if win == -1 then return end  -- dashboard buffer exists but no window is showing it
+    for _, ex in ipairs(exercise_data) do
+        if ex.name == exercise_name then
+            -- ex.line is 0-based; nvim_win_set_cursor wants 1-based
+            pcall(vim.api.nvim_win_set_cursor, win, { ex.line + 1, 0 })
+            -- Flash highlight on the exercise row
+            vim.api.nvim_buf_clear_namespace(dashboard_buf, NS_NAV, 0, -1)
+            vim.api.nvim_buf_add_highlight(dashboard_buf, NS_NAV, "CursorLine", ex.line, 0, -1)
+            vim.defer_fn(function()
+                if vim.api.nvim_buf_is_valid(dashboard_buf) then
+                    vim.api.nvim_buf_clear_namespace(dashboard_buf, NS_NAV, 0, -1)
+                end
+            end, 1500)
+            return
+        end
+    end
 end
 
 return M
