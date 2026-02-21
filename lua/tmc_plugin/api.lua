@@ -281,19 +281,7 @@ function M.login()
 end
 
 function M.doctor()
-    -- Use `tmc courses` — it is non-interactive and fails with a clear message
-    -- when the user is not logged in. `tmc organization` opens an interactive
-    -- picker that blocks indefinitely in a non-TTY context.
-    system.run({ "courses" }, function(obj)
-        local output = (obj.stdout .. obj.stderr):lower()
-        local logged = obj.code == 0
-            and not output:match("login")
-            and not output:match("error")
-        vim.schedule(function()
-            ui.notify(logged and "✓ Connected to TMC" or "✗ Auth Required — run :TmcLogin",
-                logged and "info" or "warn")
-        end)
-    end)
+    require("tmc_plugin.doctor").run()
 end
 
 function M.download_exercise(course, name, on_done)
