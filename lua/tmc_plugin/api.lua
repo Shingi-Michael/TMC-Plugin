@@ -296,13 +296,128 @@ function M.doctor()
     end)
 end
 
-function M.download_exercise(course, name)
+function M.download_exercise(course, name, on_done)
     local target = config.exercises_dir .. "/" .. course
     if vim.fn.isdirectory(target) == 0 then vim.fn.mkdir(target, "p") end
-    ui.notify("Downloading " .. name)
+    ui.notify("Downloading " .. name .. "...")
     system.run({ "download", "--course", course, "--currentdir" }, function(obj)
-        vim.schedule(function() ui.notify(obj.code == 0 and "Download Done" or "Download Failed") end)
+        vim.schedule(function()
+            local ok = obj.code == 0
+            ui.notify(ok and "Download complete: " .. name or "Download failed: " .. name,
+                ok and "info" or "warn")
+            if ok and on_done then on_done() end
+        end)
     end, target)
 end
+
+-- ─── Exercise navigation ─────────────────────────────────────────────────────
+
+-- Parse the current file path into { course, name, index, exercises }.
+-- Returns nil when the buffer is not inside exercises_dir.
+local function detect_exercise()
+    local path = vim.fn.expand("%:p")
+    local base = vim.fn.expand(config.exercises_dir)
+    if base:sub(-1) == "/" then base = base:sub(1, -2) end
+    if path:sub(1, #base) ~= base then return nil end
+    local rest = path:sub(#base + 2)
+    local course_name, exercise_name = rest:match("^([^/\\]+)[/\\]([^/\\]+)")
+    if not course_name or not exercise_name then return nil end
+    for _, c in ipairs(_course_cache) do
+        if c.name == course_name then
+            for i, ex in ipairs(c.raw_exercises) do
+                if ex.name == exercise_name then
+                    return { course = course_name, name = exercise_name,
+                             index = i, exercises = c.raw_exercises }
+                end
+            end
+            -- Course in cache but exercise not found (stale cache)
+            return { course = course_name, name = exercise_name,
+                     index = nil, exercises = c.raw_exercises }
+        end
+    end
+    return nil  -- course not in cache at all
+end
+
+-- Find the first source file inside <exercise_dir>/src/ (recursive).
+-- Falls back to the exercise root if there is no src/ directory.
+local SKIP_EXT = { pyc = true, class = true, o = true, beam = true, hi = true }
+local function find_source_file(exercise_dir)
+    local src = exercise_dir .. "/src"
+    local search = vim.fn.isdirectory(src) == 1 and src or exercise_dir
+    local all = vim.fn.glob(search .. "/**/*", false, true)
+    for _, f in ipairs(all) do
+        local ext = f:match("%.(%a+)$")
+        if ext and not SKIP_EXT[ext] and vim.fn.isdirectory(f) == 0 then
+            return f
+        end
+    end
+    return nil
+end
+
+-- Open an exercise by navigating to its first source file.
+-- If the exercise is not on disk, show a confirm dialog offering to download it.
+local function navigate_to_exercise(ctx, target_ex)
+    local exercise_dir = vim.fn.expand(config.exercises_dir)
+        .. "/" .. ctx.course .. "/" .. target_ex.name
+
+    local function open_exercise()
+        local src = find_source_file(exercise_dir)
+        if not src then
+            ui.notify("Could not find a source file in " .. target_ex.name, "warn")
+            return
+        end
+        vim.cmd("edit " .. vim.fn.fnameescape(src))
+        ui.notify("→ " .. target_ex.name, "info")
+        -- Sync dashboard scroll if it is currently open
+        require("tmc_plugin.dashboard").scroll_to_exercise(target_ex.name)
+    end
+
+    if vim.fn.isdirectory(exercise_dir) == 0 then
+        -- Not downloaded — prompt user
+        ui.confirm_dialog({
+            title   = "⚠  Exercise not downloaded",
+            lines   = { target_ex.name, "is not on disk." },
+            actions = {
+                {
+                    key   = "d",
+                    label = "Download & open",
+                    fn    = function()
+                        M.download_exercise(ctx.course, target_ex.name, open_exercise)
+                    end,
+                },
+                { key = "q", label = "Cancel" },
+            },
+        })
+        return
+    end
+
+    open_exercise()
+end
+
+-- Navigate to the exercise at (current_index + direction) in the course list.
+local function navigate(direction)
+    local ctx = detect_exercise()
+    if not ctx then
+        ui.notify("Not in a TMC exercise directory — open an exercise file first", "warn")
+        return
+    end
+    if not ctx.index then
+        ui.notify("Current exercise not in cache. Try refreshing with :TmcDashboard.", "warn")
+        return
+    end
+    local new_idx = ctx.index + direction
+    if new_idx < 1 then
+        ui.notify("You are at the first exercise of " .. ctx.course, "info")
+        return
+    end
+    if new_idx > #ctx.exercises then
+        ui.notify("You have reached the end of " .. ctx.course .. "! 🎉", "info")
+        return
+    end
+    navigate_to_exercise(ctx, ctx.exercises[new_idx])
+end
+
+function M.next() navigate(1)  end
+function M.prev() navigate(-1) end
 
 return M

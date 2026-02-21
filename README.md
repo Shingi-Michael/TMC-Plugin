@@ -101,6 +101,8 @@ All commands are registered by `setup()`. If a command is not found, check that 
 | `:TmcDashboard` | Open the course selector → exercise dashboard |
 | `:TmcTest` | Run `tmc test` in the current exercise directory |
 | `:TmcSubmit` | Submit the current exercise with a live log window |
+| `:TmcNext` | Navigate to the next exercise in the current course |
+| `:TmcPrev` | Navigate to the previous exercise in the current course |
 | `:TmcDoctor` | Check TMC authentication / connectivity |
 | `:TmcLogin` | Open a terminal split to run `tmc login` |
 
@@ -153,9 +155,31 @@ The recommended entry point. Opens a centered floating window:
 
 The menu closes automatically if you navigate to another window (`<C-w>w`, etc.).
 
+## Exercise Navigation (`:TmcNext` / `:TmcPrev`)
+
+Navigate between exercises without leaving Neovim.
+
+```
+:TmcNext   → opens the next exercise in the course
+:TmcPrev   → opens the previous exercise
+```
+
+**Behaviour:**
+
+| Situation | Result |
+|---|---|
+| Inside a downloaded exercise | Opens the first source file of the adjacent exercise |
+| Exercise not downloaded | Confirm dialog: `[d] Download & open` / `[q] Cancel` |
+| At the first exercise, `:TmcPrev` | `"You are at the first exercise of <course>"` |
+| At the last exercise, `:TmcNext` | `"You have reached the end of <course>! 🎉"` |
+| Not inside `exercises_dir` | Warning to open an exercise file first |
+| Dashboard is open | Scrolls to and flashes the new exercise row |
+
+> **Tip:** Run `:TmcDashboard` at least once before using navigation so the
+> exercise list is cached locally.
+
 ---
 
-## Dashboard
 
 `:TmcDashboard` opens a course picker, then renders an exercise list in a vertical split:
 

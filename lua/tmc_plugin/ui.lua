@@ -81,4 +81,86 @@ end
 
 function M.clear_status(bufnr) vim.api.nvim_buf_clear_namespace(bufnr or 0, ns_id, 0, -1) end
 
+-- ─── Confirm dialog ───────────────────────────────────────────────────────────
+-- opts = {
+--   title   : string
+--   lines   : list of body strings
+--   actions : list of { key, label, fn }  -- fn is optional (nil = close only)
+-- }
+function M.confirm_dialog(opts)
+    local title   = opts.title   or "Confirm"
+    local body    = opts.lines   or {}
+    local actions = opts.actions or {}
+
+    -- Build the hint line from actions
+    local hints = {}
+    for _, a in ipairs(actions) do
+        table.insert(hints, "[" .. a.key .. "] " .. a.label)
+    end
+    local hint_str = "  " .. table.concat(hints, "    ")
+
+    -- Dynamic width: wide enough for title, body, and hints
+    local W = 4  -- minimum
+    for _, l in ipairs({ title, hint_str, unpack(body) }) do
+        W = math.max(W, vim.api.nvim_strwidth(l) + 6)
+    end
+    W = math.max(W, 36)
+
+    local function iw(text)
+        return text .. string.rep(" ", math.max(0, W - 2 - vim.api.nvim_strwidth(text)))
+    end
+    local function box(t) return "│" .. iw(t) .. "│" end
+    local function top()  return "╭" .. string.rep("─", W - 2) .. "╮" end
+    local function mid()  return "├" .. string.rep("─", W - 2) .. "┤" end
+    local function bot()  return "╰" .. string.rep("─", W - 2) .. "╯" end
+
+    local lines = { top(), box("  " .. title), mid(), box("") }
+    for _, l in ipairs(body) do table.insert(lines, box("  " .. l)) end
+    table.insert(lines, box(""))
+    table.insert(lines, mid())
+    table.insert(lines, box(hint_str))
+    table.insert(lines, bot())
+
+    local buf = vim.api.nvim_create_buf(false, true)
+    vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
+    vim.bo[buf].modifiable = false
+    vim.bo[buf].bufhidden  = "wipe"
+
+    local height = #lines
+    local win = vim.api.nvim_open_win(buf, true, {
+        relative = "editor",
+        row      = math.max(0, math.floor((vim.o.lines   - height) / 2)),
+        col      = math.max(0, math.floor((vim.o.columns - W)      / 2)),
+        width    = W,
+        height   = height,
+        style    = "minimal",
+        zindex   = 60,
+    })
+    for k, v in pairs({ wrap = false, number = false, relativenumber = false }) do
+        vim.wo[win][k] = v
+    end
+
+    local ns = vim.api.nvim_create_namespace("tmc_dialog")
+    vim.api.nvim_buf_add_highlight(buf, ns, "TmcMenuTitle", 1, 0, -1)
+    vim.api.nvim_buf_add_highlight(buf, ns, "TmcMenuHint",  #lines - 2, 0, -1)
+
+    local function close()
+        if vim.api.nvim_win_is_valid(win) then vim.api.nvim_win_close(win, true) end
+    end
+
+    local o = { buffer = buf, noremap = true, silent = true, nowait = true }
+    for _, a in ipairs(actions) do
+        vim.keymap.set("n", a.key, function()
+            close()
+            if a.fn then vim.schedule(a.fn) end
+        end, o)
+    end
+    vim.keymap.set("n", "<Esc>", close, o)
+    -- close on focus loss
+    vim.api.nvim_create_autocmd("WinLeave", {
+        buffer = buf, once = true,
+        callback = function() vim.schedule(close) end,
+    })
+end
+
 return M

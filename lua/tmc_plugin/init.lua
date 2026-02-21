@@ -16,6 +16,8 @@ function M.setup(opts)
         TmcSubmit    = "submit",
         TmcDoctor    = "doctor",
         TmcLogin     = "login",
+        TmcNext      = "next",
+        TmcPrev      = "prev",
     }
     for cmd_name, api_func in pairs(commands) do
         vim.api.nvim_create_user_command(cmd_name, function()
