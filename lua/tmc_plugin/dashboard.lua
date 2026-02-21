@@ -205,8 +205,22 @@ local function dashboard_test(ex)
     system.run({ "test" }, function(obj)
         vim.schedule(function()
             local raw = (obj.stdout .. obj.stderr):lower()
-            local passed = obj.code == 0 or raw:match("all tests passed") ~= nil
-            local label = ex.name .. " – " .. (passed and "Tests Passed" or "Tests Failed")
+            -- tmc test prints "Failed 'TestName'" on failure (space, not colon)
+            local has_failure = raw:match("failed '") ~= nil
+                or raw:match("compilation failed") ~= nil
+            -- Parse "Test results: X/Y tests passed"
+            local p_str, t_str = raw:match("test results: (%d+)/(%d+)")
+            local p, t = tonumber(p_str), tonumber(t_str)
+            local test_ratio_ok = p and t and t > 0 and p == t
+            local passed
+            if has_failure then
+                passed = false
+            elseif raw:match("all tests passed") or test_ratio_ok then
+                passed = true
+            else
+                passed = false
+            end
+            local label = ex.name .. " — " .. (passed and "Tests Passed ✓" or "Tests Failed ✗")
             ui.notify(label, passed and "info" or "warn")
             if not passed then
                 ui.show_log_window(obj.stdout .. obj.stderr)

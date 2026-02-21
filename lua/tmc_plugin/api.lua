@@ -67,6 +67,15 @@ function M.get_courses(on_select, force_refresh)
             end
         end
 
+        -- Guard: no courses means the user is probably not logged in
+        if #names == 0 then
+            vim.schedule(function()
+                ui.notify("No courses found. Run :TmcLogin to authenticate.", "warn")
+                on_select({})
+            end)
+            return
+        end
+
         local results = {}
         local completed_count = 0
         for _, name in ipairs(names) do
@@ -133,8 +142,23 @@ function M.test()
     ui.notify("Testing...", "info")
     system.run({ "test" }, function(obj)
         vim.schedule(function()
-            local passed = (obj.stdout .. obj.stderr):lower():match("all tests passed") ~= nil
-            ui.show_virtual_status(bufnr, passed and "Passed" or "Failed", passed)
+            local raw = (obj.stdout .. obj.stderr):lower()
+            -- tmc test prints "Failed 'TestName'" on failure (note: space not colon)
+            local has_failure = raw:match("failed '") ~= nil
+                or raw:match("compilation failed") ~= nil
+            -- Parse "Test results: X/Y tests passed"
+            local p_str, t_str = raw:match("test results: (%d+)/(%d+)")
+            local p, t = tonumber(p_str), tonumber(t_str)
+            local test_ratio_ok = p and t and t > 0 and p == t
+            local passed
+            if has_failure then
+                passed = false
+            elseif raw:match("all tests passed") or test_ratio_ok then
+                passed = true
+            else
+                passed = false
+            end
+            ui.show_virtual_status(bufnr, passed and "Tests Passed" or "Tests Failed", passed)
             if not passed then ui.show_log_window(obj.stdout .. obj.stderr) end
         end)
     end, get_project_root())
@@ -243,10 +267,18 @@ function M.login()
 end
 
 function M.doctor()
-    system.run({ "organization" }, function(obj)
+    -- Use `tmc courses` — it is non-interactive and fails with a clear message
+    -- when the user is not logged in. `tmc organization` opens an interactive
+    -- picker that blocks indefinitely in a non-TTY context.
+    system.run({ "courses" }, function(obj)
         local output = (obj.stdout .. obj.stderr):lower()
-        local logged = obj.code == 0 and not output:match("login")
-        ui.notify(logged and "Connected to TMC" or "Auth Required")
+        local logged = obj.code == 0
+            and not output:match("login")
+            and not output:match("error")
+        vim.schedule(function()
+            ui.notify(logged and "✓ Connected to TMC" or "✗ Auth Required — run :TmcLogin",
+                logged and "info" or "warn")
+        end)
     end)
 end
 
