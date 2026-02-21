@@ -9,6 +9,10 @@ function M.setup(opts)
     if opts.exercises_dir then
         config.exercises_dir = vim.fn.expand(opts.exercises_dir)
     end
+    -- Allow the user to override the MOOC.fi base URL (e.g. for older course years).
+    if opts.mooc_url then
+        config.mooc_url = opts.mooc_url
+    end
     local commands = {
         TmcMenu      = "menu",
         TmcDashboard = "open_dashboard",
