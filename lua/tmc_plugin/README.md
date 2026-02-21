@@ -24,6 +24,7 @@ require("tmc_plugin").setup({
 | `config.lua` | Shared config table (`bin`, `exercises_dir`) |
 | `api.lua` | Public API — courses, exercises, test, submit, download, login, doctor |
 | `dashboard.lua` | Interactive exercise dashboard (buffer + keymaps) |
+| `menu.lua` | Floating command palette (`:TmcMenu`) |
 | `system.lua` | Thin async wrapper around `vim.system` |
 | `ui.lua` | Progress bars, virtual text, log windows, notify helper |
 
@@ -48,8 +49,9 @@ require("tmc_plugin").setup({
 
 | Command | API function | Description |
 |---|---|---|
+| `:TmcMenu` | `menu.open()` | Floating command palette |
 | `:TmcDashboard` | `api.open_dashboard()` | Course picker → exercise dashboard |
-| `:TmcTest` | `api.test()` | Run `tmc test` in the current project root |
+| `:TmcTest` | `api.test()` | Run `tmc test` (must be inside `exercises_dir`) |
 | `:TmcSubmit` | `api.submit()` | Submit with a live streaming log window |
 | `:TmcDoctor` | `api.doctor()` | Check TMC auth / connectivity |
 | `:TmcLogin` | `api.login()` | Terminal split for `tmc login` |
