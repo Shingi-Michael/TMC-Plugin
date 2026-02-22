@@ -20,6 +20,7 @@ function M.setup(opts)
         TmcSubmit    = "submit",
         TmcDoctor    = "doctor",
         TmcInstructions = "instructions",
+        TmcDownload  = "download_prompt",
         TmcLogin     = "login",
         TmcNext      = "next",
         TmcPrev      = "prev",
