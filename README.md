@@ -241,18 +241,19 @@ Checks 1 and 3 run async and update in-place when results arrive — the report 
  [x] part01-02_seven_brothers
  [ ] part01-03_row_your_boat
 
- [Enter] Test  [d] Download  [s] Submit  [r] Refresh  [q] Close
+ [Enter] Open  [t] Test  [d] Download  [s] Submit  [r] Refresh  [q] Close
 ```
 
 | Key | Action |
 |---|---|
-| `<Enter>` | Test the exercise under the cursor |
+| `<Enter>` | Open the exercise source file in a new buffer |
+| `t` | Run `tmc test` on the exercise under the cursor |
 | `s` | Submit the exercise under the cursor |
 | `d` | Download the exercise under the cursor |
 | `r` | Force-refresh data from TMC servers |
 | `q` | Close the dashboard |
 
-Move the cursor to an exercise line before pressing `s`, `<Enter>`, or `d`.
+Move the cursor to an exercise line before pressing `<Enter>`, `t`, `s`, or `d`.
 
 ---
 
