@@ -10,6 +10,7 @@ local M = {}
 local NS_ID = vim.api.nvim_create_namespace("tmc_dashboard")
 local BUF_NAME = "TMC_Dashboard"
 local dashboard_buf = nil
+local previous_win = nil              -- window that was focused before the dashboard opened
 local current_course = nil
 local exercise_data = {}
 local is_loading = false
@@ -274,6 +275,7 @@ function M.render(course_name, exercises)
     vim.bo[buf].modifiable = false
 
     if vim.fn.bufwinid(buf) == -1 then
+        previous_win = vim.api.nvim_get_current_win()  -- remember the caller's window
         vim.cmd("vsplit")
         vim.api.nvim_win_set_buf(0, buf)
     end
@@ -288,7 +290,7 @@ end
 function M.setup_keymaps(buf)
     local opts = { buffer = buf, noremap = true, silent = true }
 
-    -- [Enter] → open the exercise source file in a new buffer
+    -- [Enter] → open the exercise source file in the previous (main) window
     vim.keymap.set("n", "<CR>", function()
         local ex = get_selected_exercise()
         if not ex then
@@ -296,44 +298,59 @@ function M.setup_keymaps(buf)
             return
         end
         local exercise_dir = get_project_root_for_exercise(ex.name)
-        if vim.fn.isdirectory(exercise_dir) == 0 then
-            -- Not downloaded — reuse the download+open flow from api
-            require("tmc_plugin.api").download_exercise(current_course, ex.name, function()
-                local src_dir = exercise_dir .. "/src"
-                local search = vim.fn.isdirectory(src_dir) == 1 and src_dir or exercise_dir
-                local all = vim.fn.glob(search .. "/**/*", false, true)
-                local skip = { pyc=true, class=true, o=true, beam=true, hi=true }
-                local src
-                for _, f in ipairs(all) do
-                    local ext = f:match("%.(%a+)$")
-                    if ext and not skip[ext] and vim.fn.isdirectory(f) == 0 then
-                        src = f; break
-                    end
+
+        -- Helper: find first editable source file under a directory
+        local skip = { pyc=true, class=true, o=true, beam=true, hi=true }
+        local function find_src(dir)
+            local src_sub = dir .. "/src"
+            local search = vim.fn.isdirectory(src_sub) == 1 and src_sub or dir
+            for _, f in ipairs(vim.fn.glob(search .. "/**/*", false, true)) do
+                local ext = f:match("%.(%a+)$")
+                if ext and not skip[ext] and vim.fn.isdirectory(f) == 0 then
+                    return f
                 end
+            end
+        end
+
+        local function open_in_prev_win(src)
+            local target = (previous_win and vim.api.nvim_win_is_valid(previous_win))
+                and previous_win or vim.api.nvim_get_current_win()
+            
+            local dash_win = vim.fn.bufwinid(dashboard_buf)
+            local is_dash_win_target = (dash_win ~= -1 and target == dash_win)
+
+            if not is_dash_win_target then
+                vim.api.nvim_set_current_win(target)
+            end
+            
+            vim.cmd("edit " .. vim.fn.fnameescape(src))
+            
+            -- Explicitly close the dashboard window if it's a split
+            if dash_win ~= -1 and #vim.api.nvim_list_wins() > 1 then
+                pcall(vim.api.nvim_win_close, dash_win, true)
+            end
+            
+            dashboard_buf = nil
+            keymaps_set = false
+            ui.notify("Opened " .. ex.name, "info")
+        end
+
+        if vim.fn.isdirectory(exercise_dir) == 0 then
+            -- Not downloaded — download then open
+            require("tmc_plugin.api").download_exercise(current_course, ex.name, function()
+                local src = find_src(exercise_dir)
                 if src then
-                    vim.schedule(function() vim.cmd("edit " .. vim.fn.fnameescape(src)) end)
-                    ui.notify("Opened " .. ex.name, "info")
+                    vim.schedule(function() open_in_prev_win(src) end)
                 else
                     ui.notify("No source file found in " .. ex.name, "warn")
                 end
             end)
             return
         end
-        -- Exercise is on disk — find and open its first source file
-        local skip = { pyc=true, class=true, o=true, beam=true, hi=true }
-        local src_dir = exercise_dir .. "/src"
-        local search = vim.fn.isdirectory(src_dir) == 1 and src_dir or exercise_dir
-        local all = vim.fn.glob(search .. "/**/*", false, true)
-        local src
-        for _, f in ipairs(all) do
-            local ext = f:match("%.(%a+)$")
-            if ext and not skip[ext] and vim.fn.isdirectory(f) == 0 then
-                src = f; break
-            end
-        end
+
+        local src = find_src(exercise_dir)
         if src then
-            vim.cmd("edit " .. vim.fn.fnameescape(src))
-            ui.notify("Opened " .. ex.name, "info")
+            vim.schedule(function() open_in_prev_win(src) end)
         else
             ui.notify("No source file found in " .. ex.name, "warn")
         end
