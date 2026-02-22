@@ -44,6 +44,7 @@ end
 local ITEMS = {
     { type = "group", label = "Exercises" },
     { type = "item",  icon = "󰙨",  label = "Dashboard",  desc = "Browse & manage exercises",   action = "open_dashboard" },
+    { type = "item",  icon = "⬇",  label = "Download",   desc = "Download course exercises",    action = "download_prompt" },
     { type = "item",  icon = "✓",  label = "Test",        desc = "Run tests in current exercise", action = "test" },
     { type = "item",  icon = "↑",  label = "Submit",      desc = "Submit exercise to TMC",       action = "submit" },
     { type = "spacer" },

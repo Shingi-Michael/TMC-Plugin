@@ -105,6 +105,7 @@ All commands are registered by `setup()`. If a command is not found, check that 
 |---|---|
 | `:TmcMenu` | Open the floating command palette (recommended entry point) |
 | `:TmcDashboard` | Open the course selector → exercise dashboard |
+| `:TmcDownload` | Download exercises for a specific course |
 | `:TmcTest` | Run `tmc test` in the current exercise directory |
 | `:TmcSubmit` | Submit the current exercise with a live log window |
 | `:TmcNext` | Navigate to the next exercise in the current course |
@@ -132,6 +133,7 @@ The recommended entry point. Opens a centered floating window:
 │  Exercises                                             │
 │  ────────────────────────────────────────────────────  │
 │        Dashboard       Browse & manage exercises      │
+│     ⬇   Download        Download course exercises      │
 │     ✓   Test            Run tests in current exercise  │
 │     ↑   Submit          Submit exercise to TMC         │
 │                                                        │
@@ -241,7 +243,7 @@ Checks 1 and 3 run async and update in-place when results arrive — the report 
  [x] part01-02_seven_brothers
  [ ] part01-03_row_your_boat
 
- [Enter] Open  [t] Test  [d] Download  [s] Submit  [r] Refresh  [q] Close
+ [Enter] Open  [t] Test  [s] Submit  [r] Refresh  [q] Close
 ```
 
 | Key | Action |
@@ -249,11 +251,10 @@ Checks 1 and 3 run async and update in-place when results arrive — the report 
 | `<Enter>` | Open the exercise source file in a new buffer |
 | `t` | Run `tmc test` on the exercise under the cursor |
 | `s` | Submit the exercise under the cursor |
-| `d` | Download the exercise under the cursor |
 | `r` | Force-refresh data from TMC servers |
 | `q` | Close the dashboard |
 
-Move the cursor to an exercise line before pressing `<Enter>`, `t`, `s`, or `d`.
+Move the cursor to an exercise line before pressing `<Enter>`, `t`, or `s`.
 
 ---
 

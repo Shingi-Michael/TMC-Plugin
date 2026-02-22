@@ -42,10 +42,17 @@ end
 local function parse_exercises(raw_lines)
     local cleaned = {}
     for _, line in ipairs(raw_lines) do
-        if line ~= "" and not line:match("Auto%-") and not line:match("Fetching") then
+        if line ~= "" and not line:match("Auto%-") and not line:match("Fetching") 
+            and not line:match("^Course name:") and not line:match("^Deadline:") 
+            and not line:match("^Soft deadline:") then
+            
             local is_completed = line:match("Completed:") ~= nil
-            local name = line:gsub("Completed:%s*", ""):gsub("^%s*[%[%]%sx]*%s*", "")
+            -- Handle "Not completed: " and "Completed: " prefixes from tmc-cli-rust
+            local name = line:gsub("Not completed:%s*", ""):gsub("Completed:%s*", "")
+            -- Also strip any checkbox-like formatting `[ ]` just in case
+            name = name:gsub("^%s*[%[%]%sx]*%s*", "")
             name = vim.trim(name)
+            
             if #name > 0 then table.insert(cleaned, { name = name, completed = is_completed }) end
         end
     end
@@ -285,7 +292,7 @@ function M.doctor()
 end
 
 function M.download_exercise(course, name, on_done)
-    local target = config.exercises_dir .. "/" .. course
+    local target = vim.fn.expand(config.exercises_dir)
     if vim.fn.isdirectory(target) == 0 then vim.fn.mkdir(target, "p") end
     ui.notify("Downloading " .. name .. "...")
     system.run({ "download", "--course", course, "--currentdir" }, function(obj)
@@ -296,6 +303,20 @@ function M.download_exercise(course, name, on_done)
             if ok and on_done then on_done() end
         end)
     end, target)
+end
+
+function M.download_prompt()
+    M.get_courses(function(courses)
+        if not courses or #courses == 0 then
+            ui.notify("No courses found. Please check your login.", "warn")
+            return
+        end
+        local items = {}
+        for _, c in ipairs(courses) do table.insert(items, c.name) end
+        ui.show_menu(items, "Select Course to Download:", "course", function(selected)
+            M.download_exercise(selected, "all exercises for " .. selected)
+        end)
+    end)
 end
 
 -- ─── Exercise navigation ─────────────────────────────────────────────────────
@@ -363,21 +384,8 @@ local function navigate_to_exercise(ctx, target_ex)
     end
 
     if vim.fn.isdirectory(exercise_dir) == 0 then
-        -- Not downloaded — prompt user
-        ui.confirm_dialog({
-            title   = "⚠  Exercise not downloaded",
-            lines   = { target_ex.name, "is not on disk." },
-            actions = {
-                {
-                    key   = "d",
-                    label = "Download & open",
-                    fn    = function()
-                        M.download_exercise(ctx.course, target_ex.name, open_exercise)
-                    end,
-                },
-                { key = "q", label = "Cancel" },
-            },
-        })
+        -- Not downloaded
+        ui.notify("Exercise " .. target_ex.name .. " is not downloaded yet. Please download the course first.", "warn")
         return
     end
 

@@ -263,7 +263,7 @@ function M.render(course_name, exercises)
     end
 
     table.insert(lines, "")
-    table.insert(lines, " [Enter] Open  [t] Test  [d] Download  [s] Submit  [r] Refresh  [q] Close")
+    table.insert(lines, " [Enter] Open  [t] Test  [s] Submit  [r] Refresh  [q] Close")
 
     vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
 
@@ -336,15 +336,7 @@ function M.setup_keymaps(buf)
         end
 
         if vim.fn.isdirectory(exercise_dir) == 0 then
-            -- Not downloaded — download then open
-            require("tmc_plugin.api").download_exercise(current_course, ex.name, function()
-                local src = find_src(exercise_dir)
-                if src then
-                    vim.schedule(function() open_in_prev_win(src) end)
-                else
-                    ui.notify("No source file found in " .. ex.name, "warn")
-                end
-            end)
+            ui.notify("Exercise not downloaded. Please download the course exercises first from the menu.", "warn")
             return
         end
 
@@ -361,15 +353,7 @@ function M.setup_keymaps(buf)
         dashboard_test(get_selected_exercise())
     end, opts)
 
-    -- [d] → download the exercise under the cursor
-    vim.keymap.set("n", "d", function()
-        local ex = get_selected_exercise()
-        if ex and current_course then
-            require("tmc_plugin.api").download_exercise(current_course, ex.name)
-        else
-            ui.notify("Place cursor on an exercise first", "warn")
-        end
-    end, opts)
+    -- removed [d] download keymap
 
     -- [s] → submit the exercise under the cursor
     vim.keymap.set("n", "s", function()
