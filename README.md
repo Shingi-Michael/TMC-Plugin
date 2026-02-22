@@ -125,7 +125,7 @@ The recommended entry point. Opens a centered floating window:
 
 ```
 ╭────────────────────────────────────────────────────────╮
-│  ⚡ TMC Plugin                                          │
+│  ⚡ TMC Plugin                                         │
 │  ✓ Connected  •  programming-25                        │
 ├────────────────────────────────────────────────────────┤
 │                                                        │
