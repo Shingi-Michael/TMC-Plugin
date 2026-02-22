@@ -262,7 +262,7 @@ function M.render(course_name, exercises)
     end
 
     table.insert(lines, "")
-    table.insert(lines, " [Enter] Test  [d] Download  [s] Submit  [r] Refresh  [q] Close")
+    table.insert(lines, " [Enter] Open  [t] Test  [d] Download  [s] Submit  [r] Refresh  [q] Close")
 
     vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
 
@@ -288,8 +288,59 @@ end
 function M.setup_keymaps(buf)
     local opts = { buffer = buf, noremap = true, silent = true }
 
-    -- [Enter] → test the exercise under the cursor
+    -- [Enter] → open the exercise source file in a new buffer
     vim.keymap.set("n", "<CR>", function()
+        local ex = get_selected_exercise()
+        if not ex then
+            ui.notify("Place cursor on an exercise first", "warn")
+            return
+        end
+        local exercise_dir = get_project_root_for_exercise(ex.name)
+        if vim.fn.isdirectory(exercise_dir) == 0 then
+            -- Not downloaded — reuse the download+open flow from api
+            require("tmc_plugin.api").download_exercise(current_course, ex.name, function()
+                local src_dir = exercise_dir .. "/src"
+                local search = vim.fn.isdirectory(src_dir) == 1 and src_dir or exercise_dir
+                local all = vim.fn.glob(search .. "/**/*", false, true)
+                local skip = { pyc=true, class=true, o=true, beam=true, hi=true }
+                local src
+                for _, f in ipairs(all) do
+                    local ext = f:match("%.(%a+)$")
+                    if ext and not skip[ext] and vim.fn.isdirectory(f) == 0 then
+                        src = f; break
+                    end
+                end
+                if src then
+                    vim.schedule(function() vim.cmd("edit " .. vim.fn.fnameescape(src)) end)
+                    ui.notify("Opened " .. ex.name, "info")
+                else
+                    ui.notify("No source file found in " .. ex.name, "warn")
+                end
+            end)
+            return
+        end
+        -- Exercise is on disk — find and open its first source file
+        local skip = { pyc=true, class=true, o=true, beam=true, hi=true }
+        local src_dir = exercise_dir .. "/src"
+        local search = vim.fn.isdirectory(src_dir) == 1 and src_dir or exercise_dir
+        local all = vim.fn.glob(search .. "/**/*", false, true)
+        local src
+        for _, f in ipairs(all) do
+            local ext = f:match("%.(%a+)$")
+            if ext and not skip[ext] and vim.fn.isdirectory(f) == 0 then
+                src = f; break
+            end
+        end
+        if src then
+            vim.cmd("edit " .. vim.fn.fnameescape(src))
+            ui.notify("Opened " .. ex.name, "info")
+        else
+            ui.notify("No source file found in " .. ex.name, "warn")
+        end
+    end, opts)
+
+    -- [t] → test the exercise under the cursor
+    vim.keymap.set("n", "t", function()
         dashboard_test(get_selected_exercise())
     end, opts)
 
