@@ -5,6 +5,10 @@ local theme = { course = "󰉋 ", exercise_pending = "󱎫 ", exercise_done = "�
 
 vim.api.nvim_set_hl(0, "TmcSuccess", { fg = "#98c379", bold = true })
 vim.api.nvim_set_hl(0, "TmcFailure", { fg = "#e06c75", bold = true })
+vim.api.nvim_set_hl(0, "TmcVirtualSuccess", { fg = "#a6e3a1", italic = true, default = true })
+vim.api.nvim_set_hl(0, "TmcVirtualTesting", { fg = "#89b4fa", italic = true, default = true })
+vim.api.nvim_set_hl(0, "TmcVirtualFailure", { fg = "#f38ba8", italic = true, default = true })
+vim.api.nvim_set_hl(0, "TmcFooterLine", { bg = "#1e1e2e", fg = "#cdd6f4", bold = true, default = true })
 
 function M.make_progress_bar(percentage)
     local width = 10
