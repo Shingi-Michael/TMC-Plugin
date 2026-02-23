@@ -283,8 +283,11 @@ function M.submit()
 end
 
 function M.login()
-    -- Use `env` prefix for cross-shell compatibility (bash, zsh, fish, etc.)
-    vim.cmd("split | term env EDITOR=cat " .. (config.bin or "tmc") .. " login")
+    vim.cmd("split")
+    -- Use termopen to securely pass the environment without shell assumptions
+    local cmd = { config.bin or "tmc", "login" }
+    vim.fn.termopen(cmd, { env = { EDITOR = "cat" } })
+    vim.cmd("startinsert")
 end
 
 function M.doctor()
@@ -326,7 +329,7 @@ end
 local function detect_exercise()
     local path = vim.fn.expand("%:p")
     local base = vim.fn.expand(config.exercises_dir)
-    if base:sub(-1) == "/" then base = base:sub(1, -2) end
+    if base:match("[/\\]$") then base = base:sub(1, -2) end
     if path:sub(1, #base) ~= base then return nil end
     local rest = path:sub(#base + 2)
     local course_name, exercise_name = rest:match("^([^/\\]+)[/\\]([^/\\]+)")

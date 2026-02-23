@@ -30,6 +30,7 @@ local function chk_exercises_dir()
     end
     local n = 0
     for _, e in ipairs(vim.fn.readdir(dir)) do
+        -- Neovim normalizes `/` internally so this is safe cross-platform
         if not e:match("^%.") and vim.fn.isdirectory(dir .. "/" .. e) == 1 then
             n = n + 1
         end
@@ -59,7 +60,7 @@ end
 local function chk_context()
     local path = vim.fn.expand("%:p")
     local base = vim.fn.expand(config.exercises_dir)
-    if base:sub(-1) == "/" then base = base:sub(1, -2) end
+    if base:match("[/\\]$") then base = base:sub(1, -2) end
     if path == "" or path:sub(1, #base) ~= base then
         return { WARN .. "Not inside an exercise directory", "" }
     end
