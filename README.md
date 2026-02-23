@@ -1,4 +1,4 @@
-# TMC-Plugin
+# TMC.nvim
 
 A lightweight Neovim plugin for the **Test My Code (TMC)** framework.
 Manage courses, browse exercises, run tests, and submit — without leaving your editor.
@@ -35,7 +35,7 @@ require("tmc_plugin").setup({
 
 ```lua
 {
-  "Shingi-Michael/TMC-Plugin",
+  "Shingi-Michael/TMC.nvim",
   -- ✅ config function is REQUIRED — setup() registers all :Tmc* commands
   config = function()
     require("tmc_plugin").setup({
@@ -53,7 +53,7 @@ require("tmc_plugin").setup({
 
 ```lua
 use {
-  "Shingi-Michael/TMC-Plugin",
+  "Shingi-Michael/TMC.nvim",
   -- ✅ config function is REQUIRED — setup() registers all :Tmc* commands
   config = function()
     require("tmc_plugin").setup({
