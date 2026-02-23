@@ -5,12 +5,12 @@ local M      = {}
 local config = require("tmc_plugin.config")
 local system = require("tmc_plugin.system")
 
-local PASS = "  \u{2713}  "   -- ✓  (3-byte UTF-8 at byte offset 2)
-local FAIL = "  \u{2717}  "   -- ✗
-local WARN = "  ~  "
-local UNKN = "  ?  "
-local INFO = "       "        -- 7 spaces (aligns with PASS text)
-local SEP  = "  " .. string.rep("\u{2500}", 54)  -- ─────
+local PASS = "    󰄬  "
+local FAIL = "    󰄱  "
+local WARN = "    ~  "
+local UNKN = "    ?  "
+local INFO = "       "
+local SEP  = "  ────────────────────────────────────────────────────────"
 
 -- ─── Sync checks ─────────────────────────────────────────────────────────────
 
@@ -152,63 +152,84 @@ end
 -- ─── Render ───────────────────────────────────────────────────────────────────
 
 function M.run()
-    local title    = "TMC Doctor \u{2014} " .. os.date("%Y-%m-%d %H:%M")
-    -- Async sections need fixed placeholder line counts matching max result lines
-    local BIN_PH  = { WARN .. "Checking...", "" }   -- Binary:  2 lines
-    local AUTH_PH = { WARN .. "Checking..." }        -- Auth:    1 line
+    local title    = "🏥 TMC System Health Report"
+    local BIN_PH  = { WARN .. "Checking...", "" }
+    local AUTH_PH = { WARN .. "Checking..." }
 
-    local buf_lines  = { title, string.rep("=", vim.api.nvim_strwidth(title)), "" }
-    local async_info = {}   -- [section_num] = { start, count }
+    local buf_lines = {
+        "  ╭────────────────────────────────────────────────────────╮",
+        "  │  " .. title .. string.rep(" ", 54 - vim.api.nvim_strwidth(title)) .. "│",
+        "  ╰────────────────────────────────────────────────────────╯",
+        ""
+    }
+    local async_info = {}
 
     local function add_section(num, label, result_lines)
-        table.insert(buf_lines, ("  [%d] %s"):format(num, label))
+        table.insert(buf_lines, "  " .. label)
         table.insert(buf_lines, SEP)
-        local start = #buf_lines   -- 0-based index of first result line
+        local start = #buf_lines
         for _, l in ipairs(result_lines) do table.insert(buf_lines, l) end
         async_info[num] = { start = start, count = #result_lines }
         table.insert(buf_lines, "")
     end
 
-    add_section(1, "Binary",             BIN_PH)
-    add_section(2, "Neovim",             chk_neovim())
-    add_section(3, "Authentication",     AUTH_PH)
-    add_section(4, "Exercises Directory",chk_exercises_dir())
-    add_section(5, "Cache",              chk_cache())
-    add_section(6, "Current Context",    chk_context())
-    add_section(7, "Configuration",      chk_config())
+    add_section(1, "System & Binaries", BIN_PH)
+    add_section(2, "Neovim", chk_neovim())
+    add_section(3, "Authentication", AUTH_PH)
+    add_section(4, "Exercises Directory", chk_exercises_dir())
+    add_section(5, "Cache", chk_cache())
+    add_section(6, "Current Context", chk_context())
+    add_section(7, "Configuration", chk_config())
+    
+    table.insert(buf_lines, "  [q] Close")
 
-    -- Create buffer
     local buf = vim.api.nvim_create_buf(false, true)
     vim.api.nvim_buf_set_lines(buf, 0, -1, false, buf_lines)
-    vim.bo[buf].modifiable = false; vim.bo[buf].buftype  = "nofile"
-    vim.bo[buf].bufhidden  = "wipe"; vim.bo[buf].swapfile = false
+    vim.bo[buf].modifiable = false
+    vim.bo[buf].buftype = "nofile"
+    vim.bo[buf].bufhidden = "wipe"
 
-    vim.cmd("botright 20split")
-    local win = vim.api.nvim_get_current_win()
-    vim.api.nvim_win_set_buf(win, buf)
-    for k, v in pairs({ wrap = false, number = false, relativenumber = false,
-                         signcolumn = "no", cursorline = false }) do
-        vim.wo[win][k] = v
-    end
-    vim.keymap.set("n", "q", ":close<CR>", { buffer = buf, silent = true })
+    -- Highlight setup
+    vim.api.nvim_set_hl(0, "TmcDocTitle", { fg = "#e5c07b", bold = true, default = true })
+    vim.api.nvim_set_hl(0, "TmcDocItem", { fg = "#abb2bf", default = true })
+    vim.api.nvim_set_hl(0, "TmcDocPass", { fg = "#98c379", bold = true, default = true })
+    vim.api.nvim_set_hl(0, "TmcDocWarn", { fg = "#e06c75", bold = true, default = true })
 
-    -- Highlights
+    local width = 60
+    local height = #buf_lines + 2
+    local ui = vim.api.nvim_list_uis()[1]
+    
+    local win = vim.api.nvim_open_win(buf, true, {
+        relative = "editor",
+        width = width,
+        height = height,
+        col = math.floor((ui.width - width) / 2),
+        row = math.floor((ui.height - height) / 2),
+        style = "minimal",
+        border = "rounded"
+    })
+
+    vim.keymap.set("n", "q", function() pcall(vim.api.nvim_win_close, win, true) end, { buffer = buf, silent = true })
+
     local ns = vim.api.nvim_create_namespace("tmc_doctor")
     local function apply_hl()
         vim.api.nvim_buf_clear_namespace(buf, ns, 0, -1)
-        vim.api.nvim_buf_add_highlight(buf, ns, "TmcMenuTitle", 0, 0, -1)
+        vim.api.nvim_buf_add_highlight(buf, ns, "TmcDocTitle", 1, 0, -1)
         for i, l in ipairs(vim.api.nvim_buf_get_lines(buf, 0, -1, false)) do
             local li = i - 1
-            if     l:match("^  %[%d%]")   then vim.api.nvim_buf_add_highlight(buf, ns, "TmcMenuGroup", li, 0, -1)
-            elseif l:match("^  \u{2713}") then vim.api.nvim_buf_add_highlight(buf, ns, "TmcSuccess",   li, 2, 5)
-            elseif l:match("^  \u{2717}") then vim.api.nvim_buf_add_highlight(buf, ns, "TmcFailure",   li, 2, 5)
-            elseif l:match("^  [~?]")     then vim.api.nvim_buf_add_highlight(buf, ns, "TmcMenuHint",  li, 2, 3)
+            if l:match("───") then
+                vim.api.nvim_buf_add_highlight(buf, ns, "TmcDocItem", li, 0, -1)
+            elseif l:match("󰄬") then
+                local s = l:find("󰄬")
+                if s then vim.api.nvim_buf_add_highlight(buf, ns, "TmcDocPass", li, s - 1, s + 3) end
+            elseif l:match("󰄱") or l:match("~") or l:match("%?") then
+                local s = l:find("󰄱") or l:find("~") or l:find("%?")
+                if s then vim.api.nvim_buf_add_highlight(buf, ns, "TmcDocWarn", li, s - 1, s + 3) end
             end
         end
     end
     apply_hl()
 
-    -- Async updater — pads/trims to original placeholder count so line numbers stay stable
     local function update(num, new_lines)
         vim.schedule(function()
             if not vim.api.nvim_buf_is_valid(buf) then return end
@@ -223,7 +244,7 @@ function M.run()
     end
 
     chk_binary_async(function(l) update(1, l) end)
-    chk_auth_async(  function(l) update(3, l) end)
+    chk_auth_async(function(l) update(3, l) end)
 end
 
 return M
