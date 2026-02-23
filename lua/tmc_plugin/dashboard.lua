@@ -201,10 +201,36 @@ local function dashboard_test(ex)
         return
     end
 
-    ui.notify("Testing " .. ex.name .. "...", "info")
+    -- Virtual text state
+    local is_testing = true
+    local extmark_id = nil
+
+    local function animate_spinner()
+        if not is_testing or not dashboard_buf or not vim.api.nvim_buf_is_valid(dashboard_buf) then return end
+        local frame = spinner_frames[spinner_idx]
+        spinner_idx = (spinner_idx % #spinner_frames) + 1
+        
+        if extmark_id then
+            pcall(vim.api.nvim_buf_del_extmark, dashboard_buf, NS_ID, extmark_id)
+        end
+        local ok, mark = pcall(vim.api.nvim_buf_set_extmark, dashboard_buf, NS_ID, ex.line, 0, {
+            virt_text = { { "  " .. frame .. " Testing...", "TmcVirtualTesting" } },
+            virt_text_pos = "eol",
+            hl_mode = "combine",
+        })
+        if ok then extmark_id = mark end
+        vim.defer_fn(animate_spinner, 80)
+    end
+    
+    animate_spinner()
 
     system.run({ "test" }, function(obj)
         vim.schedule(function()
+            is_testing = false
+            if dashboard_buf and vim.api.nvim_buf_is_valid(dashboard_buf) and extmark_id then
+                pcall(vim.api.nvim_buf_del_extmark, dashboard_buf, NS_ID, extmark_id)
+            end
+
             local raw = (obj.stdout .. obj.stderr):lower()
             -- tmc test prints "Failed 'TestName'" on failure (space, not colon)
             local has_failure = raw:match("failed '") ~= nil
@@ -221,8 +247,19 @@ local function dashboard_test(ex)
             else
                 passed = false
             end
-            local label = ex.name .. " — " .. (passed and "Tests Passed ✓" or "Tests Failed ✗")
-            ui.notify(label, passed and "info" or "warn")
+            
+            if dashboard_buf and vim.api.nvim_buf_is_valid(dashboard_buf) then
+                local msg = passed and "  ✓ Passed" or "  ✗ Failed"
+                local hl = passed and "TmcVirtualSuccess" or "TmcVirtualFailure"
+                pcall(vim.api.nvim_buf_set_extmark, dashboard_buf, NS_ID, ex.line, 0, {
+                    virt_text = { { msg, hl } },
+                    virt_text_pos = "eol",
+                })
+            else
+                local label = ex.name .. " — " .. (passed and "Tests Passed ✓" or "Tests Failed ✗")
+                ui.notify(label, passed and "info" or "warn")
+            end
+            
             if not passed then
                 ui.show_log_window(obj.stdout .. obj.stderr)
             end
@@ -288,8 +325,10 @@ function M.render(course_name, exercises)
         })
     end
 
-    table.insert(lines, "")
-    table.insert(lines, "  [Enter] Open  [t] Test  [s] Submit  [r] Refresh  [q] Close")
+    if vim.fn.has("nvim-0.8") == 0 then
+        table.insert(lines, "")
+        table.insert(lines, "  [Enter] Open  [t] Test  [s] Submit  [r] Refresh  [q] Close")
+    end
 
     vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
 
@@ -308,6 +347,11 @@ function M.render(course_name, exercises)
         previous_win = vim.api.nvim_get_current_win()  -- remember the caller's window
         vim.cmd("vsplit")
         vim.api.nvim_win_set_buf(0, buf)
+    end
+
+    local win = vim.fn.bufwinid(buf)
+    if win ~= -1 and vim.fn.has("nvim-0.8") == 1 then
+        vim.wo[win].winbar = "%#TmcFooterLine#  [Enter] Open   [t] Test   [s] Submit   [r] Refresh   [q] Close"
     end
 
     -- Only register keymaps once per buffer lifetime to avoid stacking
