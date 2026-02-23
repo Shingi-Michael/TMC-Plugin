@@ -1,7 +1,5 @@
 <h1 align="center">
   <br>
-  <img src="https://raw.githubusercontent.com/Shingi-Michael/TMC.nvim/main/assets/logo.png" alt="TMC.nvim" width="200">
-  <br>
   TMC.nvim
 </h1>
 
@@ -9,14 +7,16 @@
 
 <p align="center">
   <a href="#features">Features</a> •
+  <a href="#requirements">Requirements</a> •
   <a href="#installation">Installation</a> •
-  <a href="#commands">Commands</a> •
   <a href="#configuration">Configuration</a> •
+  <a href="#commands">Commands</a> •
   <a href="#health-checks">Health Checks</a>
 </p>
 
 ---
 
+<a id="features"></a>
 ## 🚀 Features
 
 **TMC.nvim** brings the University of Helsinki's MOOC programming environment directly into your terminal with zero bloat.
@@ -32,6 +32,7 @@
 
 ---
 
+<a id="requirements"></a>
 ## 📦 Requirements
 
 - **Neovim** `≥ 0.10.0` (Recommended) or `≥ 0.9.0`
@@ -39,6 +40,7 @@
 
 ---
 
+<a id="installation"></a>
 ## 🛠 Installation
 
 > **⚠️ IMPORTANT:** The plugin will not load its user commands unless `setup()` is called. 
@@ -68,6 +70,7 @@ use {
 
 ---
 
+<a id="configuration"></a>
 ## ⚙️ Configuration
 
 `TMC.nvim` attempts to smartly auto-resolve your `exercises_dir` depending on whether you are on Windows, Mac, or Linux. However, you can explicitly override these settings inside your `setup()` call:
@@ -90,6 +93,7 @@ require("tmc_plugin").setup({
 
 ---
 
+<a id="commands"></a>
 ## 🎯 Commands
 
 Access the entirety of the plugin by typing `:TmcMenu` to open the central floating command palette!
@@ -110,6 +114,7 @@ Access the entirety of the plugin by typing `:TmcMenu` to open the central float
 
 ---
 
+<a id="health-checks"></a>
 ## 🏥 Health Checks (`:TmcDoctor`)
 
 If you are having trouble running tests or downloading courses, simply run:
@@ -126,6 +131,6 @@ This will launch a dedicated floating diagnostic window that verifies:
 ---
 
 <p align="center">
-  Built with ☕ by <a href="https://github.com/Shingi-Michael">Shingi-Michael</a><br>
+  Built with ❤️ by <a href="https://github.com/Shingi-Michael">Shingi-Michael</a><br>
   Released under the MIT License
 </p>
