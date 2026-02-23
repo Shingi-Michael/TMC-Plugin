@@ -246,30 +246,60 @@ function M.render(course_name, exercises)
     local pct = #exercises > 0 and math.floor((done / #exercises) * 100) or 0
 
     local lines = {
-        " " .. course_name:upper(),
-        " " .. string.rep("═", #course_name),
+        "  " .. course_name:upper():gsub("-", " "),
+        "  " .. string.rep("═", #course_name),
         "",
-        " Progress: " .. ui.make_progress_bar(pct),
+        "  Progress: " .. ui.make_progress_bar(pct),
         "",
-        " Exercises:",
-        " " .. string.rep("─", 30),
+        "  Exercises",
+        "  " .. string.rep("─", 40),
     }
 
-    local offset = #lines
-    for i, ex in ipairs(exercises) do
-        local status = ex.completed and "[x]" or "[ ]"
-        table.insert(lines, string.format(" %s %s", status, ex.name))
-        table.insert(exercise_data, { name = ex.name, completed = ex.completed, line = offset + i - 1 })
+    local current_part = ""
+    local group_lines = {}
+    
+    for _, ex in ipairs(exercises) do
+        -- Extract section (e.g. "part01" from "part01-01_...")
+        local part = ex.name:match("^([^%-]+)")
+        if part and part ~= current_part then
+            current_part = part
+            local part_num = part:match("%d+")
+            table.insert(lines, "")
+            table.insert(lines, "  ── Part " .. (tonumber(part_num) or "Unknown") .. " ──")
+            table.insert(group_lines, #lines - 1)
+        end
+        
+        local icon = ex.completed and "󰄬" or "󰄱"
+        
+        -- Clean display name
+        local disp_name = ex.name:gsub("^[%w]+%-[%w]+_", ""):gsub("_", " ")
+        if #disp_name > 0 then
+            disp_name = disp_name:sub(1,1):upper() .. disp_name:sub(2)
+        else
+            disp_name = ex.name
+        end
+        
+        table.insert(lines, string.format("    %s  %s", icon, disp_name))
+        table.insert(exercise_data, { 
+            name = ex.name, 
+            completed = ex.completed, 
+            line = #lines - 1,
+            icon_len = #icon
+        })
     end
 
     table.insert(lines, "")
-    table.insert(lines, " [Enter] Open  [t] Test  [s] Submit  [r] Refresh  [q] Close")
+    table.insert(lines, "  [Enter] Open  [t] Test  [s] Submit  [r] Refresh  [q] Close")
 
     vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
 
     for _, ex in ipairs(exercise_data) do
         local hl = ex.completed and "TmcSuccess" or "TmcFailure"
-        vim.api.nvim_buf_add_highlight(buf, NS_ID, hl, ex.line, 1, 4)
+        vim.api.nvim_buf_add_highlight(buf, NS_ID, hl, ex.line, 4, 4 + ex.icon_len)
+    end
+    
+    for _, gl in ipairs(group_lines) do
+        vim.api.nvim_buf_add_highlight(buf, NS_ID, "TmcMenuTitle", gl, 0, -1)
     end
 
     vim.bo[buf].modifiable = false
