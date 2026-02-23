@@ -28,7 +28,7 @@ local function detect_course()
     local path = vim.fn.expand("%:p")
     local base = vim.fn.expand(config.exercises_dir)
     -- Normalise trailing slash
-    if base:sub(-1) == "/" then base = base:sub(1, -2) end
+    if base:match("[/\\]$") then base = base:sub(1, -2) end
     if path:sub(1, #base) == base then
         local rest = path:sub(#base + 2)         -- skip the separator
         return rest:match("^([^/\\]+)")           -- first directory = course name

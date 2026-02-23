@@ -1,317 +1,131 @@
-# TMC.nvim
+<h1 align="center">
+  <br>
+  <img src="https://raw.githubusercontent.com/Shingi-Michael/TMC.nvim/main/assets/logo.png" alt="TMC.nvim" width="200">
+  <br>
+  TMC.nvim
+</h1>
 
-A lightweight Neovim plugin for the **Test My Code (TMC)** framework.
-Manage courses, browse exercises, run tests, and submit — without leaving your editor.
+<h4 align="center">A premium, blazingly fast Neovim interface for the <a href="https://github.com/rage/tmc-cli-rust" target="_blank">Test My Code (TMC)</a> framework.</h4>
 
-> **No Telescope. No Plenary.** Built entirely on native Neovim APIs.
-
----
-
-## ⚠️ IMPORTANT — `setup()` is required
-
-**The plugin will not work without calling `setup()` in your Neovim config.**
-
-The `:Tmc*` commands are only registered when `setup()` is called. If you skip this step, none of the commands will exist and the plugin will appear to do nothing.
-
-```lua
--- This MUST be in your Neovim config (init.lua or equivalent)
-require("tmc_plugin").setup({
-  bin = vim.fn.expand("~/tmc-cli-rust-x86_64-apple-darwin-v1.1.2"),
-})
-```
+<p align="center">
+  <a href="#features">Features</a> •
+  <a href="#installation">Installation</a> •
+  <a href="#commands">Commands</a> •
+  <a href="#configuration">Configuration</a> •
+  <a href="#health-checks">Health Checks</a>
+</p>
 
 ---
 
-## Requirements
+## 🚀 Features
 
-- **Neovim ≥ 0.9**
-- **tmc-cli-rust** — [github.com/rage/tmc-cli-rust](https://github.com/rage/tmc-cli-rust)
+**TMC.nvim** brings the University of Helsinki's MOOC programming environment directly into your terminal with zero bloat.
+
+- **Native Dashboard**: A beautifully categorized, asynchronous dashboard for managing courses and exercises.
+- **Cross-Platform**: Seamlessly detects and resolves paths on **macOS**, **Linux**, and **Windows**.
+- **Interactive UI**: Navigate with a floating command palette, live virtual text testing spinners, and colored Nerd Font checkmarks.
+- **Contextual Awareness**: Automatically injects dynamic breadcrumb trails into your `winbar` so you always know which exercise you're currently hacking on.
+- **System Doctor**: A pristine visual diagnostic modal that instantly pinpoints misconfigurations (binary missing, unauthenticated, wrong folders).
+- **Zero Dependencies**: Pure Lua. No `plenary.nvim`, no `telescope.nvim`. Built entirely on Neovim's standard library.
+
+<br>
 
 ---
 
-## Installation
+## 📦 Requirements
 
-### lazy.nvim
+- **Neovim** `≥ 0.10.0` (Recommended) or `≥ 0.9.0`
+- **tmc-cli-rust**: You must install the [native Rust CLI client](https://github.com/rage/tmc-cli-rust).
 
+---
+
+## 🛠 Installation
+
+> **⚠️ IMPORTANT:** The plugin will not load its user commands unless `setup()` is called. 
+
+### [lazy.nvim](https://github.com/folke/lazy.nvim)
 ```lua
 {
   "Shingi-Michael/TMC.nvim",
-  -- ✅ config function is REQUIRED — setup() registers all :Tmc* commands
+  -- Note: Do not `lazy = true` without defining a trigger event.
   config = function()
-    require("tmc_plugin").setup({
-      bin = vim.fn.expand("~/tmc-cli-rust-x86_64-apple-darwin-v1.1.2"),
-    })
+    require("tmc_plugin").setup()
   end,
 }
 ```
 
-> ❌ **Do NOT use `event = "VeryLazy"` or `lazy = true`** without a manual trigger.
-> Lazy-loading the plugin means `setup()` won't fire at startup and commands
-> will be unavailable until something else loads the plugin.
-
-### packer.nvim
-
+### [packer.nvim](https://github.com/wbthomason/packer.nvim)
 ```lua
 use {
   "Shingi-Michael/TMC.nvim",
-  -- ✅ config function is REQUIRED — setup() registers all :Tmc* commands
   config = function()
-    require("tmc_plugin").setup({
-      bin = vim.fn.expand("~/tmc-cli-rust-x86_64-apple-darwin-v1.1.2"),
-    })
-  end,
+    require("tmc_plugin").setup()
+  end
 }
 ```
 
+<br>
+
 ---
 
-## Configuration
+## ⚙️ Configuration
 
-`setup()` accepts the following options:
+`TMC.nvim` attempts to smartly auto-resolve your `exercises_dir` depending on whether you are on Windows, Mac, or Linux. However, you can explicitly override these settings inside your `setup()` call:
 
 ```lua
 require("tmc_plugin").setup({
-  -- REQUIRED if "tmc" is not on your PATH.
-  -- Provide the full path to the tmc-cli-rust binary.
+  -- Provide the absolute path to your tmc binary if it is not on your $PATH
   bin = vim.fn.expand("~/tmc-cli-rust-x86_64-apple-darwin-v1.1.2"),
 
-  -- Root directory where tmc-cli stores downloaded exercises.
-  -- Default (macOS): ~/Library/Application Support/tmc/tmc_cli_rust
-  exercises_dir = "~/Library/Application Support/tmc/tmc_cli_rust",
+  -- Override the exact root directory where TMC downloads your courses
+  -- By default, it natively selects OS-specific paths (e.g., %LOCALAPPDATA%\tmc\tmc_cli_rust)
+  exercises_dir = vim.fn.expand("~/my_custom_tmc_folder"),
 
-  -- Base URL of the MOOC.fi course site used by :TmcInstructions.
-  -- Default: https://programming-25.mooc.fi
-  -- Change this when working with a different course year, e.g.:
-  --   mooc_url = "https://programming-24.mooc.fi"
+  -- Base URL used by :TmcInstructions to fetch course-specific manuals
   mooc_url = "https://programming-25.mooc.fi",
 })
 ```
 
-### Options
-
-| Option | Type | Default | Description |
-|---|---|---|---|
-| `bin` | string | `"tmc"` | Path or name of the TMC CLI executable |
-| `exercises_dir` | string | `~/Library/Application Support/tmc/tmc_cli_rust` | Root directory where tmc-cli downloads exercises |
-| `mooc_url` | string | `https://programming-25.mooc.fi` | MOOC.fi base URL used by `:TmcInstructions` |
+<br>
 
 ---
 
-## Commands
+## 🎯 Commands
 
-All commands are registered by `setup()`. If a command is not found, check that `setup()` is being called correctly.
+Access the entirety of the plugin by typing `:TmcMenu` to open the central floating command palette!
 
-| Command | Description |
-|---|---|
-| `:TmcMenu` | Open the floating command palette (recommended entry point) |
-| `:TmcDashboard` | Open the course selector → exercise dashboard |
-| `:TmcDownload` | Download exercises for a specific course |
-| `:TmcTest` | Run `tmc test` in the current exercise directory |
-| `:TmcSubmit` | Submit the current exercise with a live log window |
-| `:TmcNext` | Navigate to the next exercise in the current course |
-| `:TmcPrev` | Navigate to the previous exercise in the current course |
-| `:TmcInstructions` | Display instructions for the active exercise inside a Neovim split |
-| `:TmcDoctor` | Full diagnostics report — binary, auth, cache, context, config |
-| `:TmcLogin` | Open a terminal split to run `tmc login` |
+| Command | Action | Description |
+|---|---|---|
+| `:TmcMenu` | **Open Palette** | Opens a centered floating menu to access all commands interactively. *(Recommended)* |
+| `:TmcDashboard`| **Dashboard** | View your selected course, track completion stats, and open exercises. |
+| `:TmcDownload` | **Download** | Opens a picker to download all exercises for a course. |
+| `:TmcTest` | **Run Tests** | Executes `tmc test` locally. Displays a live animated spinner using Virtual Text. |
+| `:TmcSubmit` | **Submit Code**| Submits the current exercise to the MOOC.fi servers for official grading. |
+| `:TmcNext` | **Next Ex.** | Automatically jumps to the next sequential exercise in the current course. |
+| `:TmcPrev` | **Prev Ex.** | Automatically jumps to the previous sequential exercise. |
+| `:TmcLogin` | **Authenticate** | Opens a terminal split to securely log in to the TMC servers. |
+| `:TmcDoctor` | **Diagnostics** | Opens a visual health dashboard to debug file paths, binaries, and auth state. |
 
-> **Note:** `:TmcTest` and `:TmcSubmit` require the current buffer to be inside the
-> configured `exercises_dir`. Opening them from an unrelated file shows a warning
-> instead of running the wrong command.
+<br>
 
 ---
 
-## Menu (`:TmcMenu`)
+## 🏥 Health Checks (`:TmcDoctor`)
 
-The recommended entry point. Opens a centered floating window:
-
-```
-╭────────────────────────────────────────────────────────╮
-│  ⚡ TMC Plugin                                         │
-│  ✓ Connected  •  programming-25                        │
-├────────────────────────────────────────────────────────┤
-│                                                        │
-│  Exercises                                             │
-│  ────────────────────────────────────────────────────  │
-│        Dashboard       Browse & manage exercises      │
-│     ⬇   Download        Download course exercises      │
-│     ✓   Test            Run tests in current exercise  │
-│     ↑   Submit          Submit exercise to TMC         │
-│                                                        │
-│  Account                                               │
-│  ────────────────────────────────────────────────────  │
-│        Login           Sign in to TMC                 │
-│     📖  Instructions    Show exercise instructions     |
-│     ✔   Doctor          Check connection & auth        │
-│                                                        │
-├────────────────────────────────────────────────────────┤
-│  j/k Navigate          Enter Select           q Close  │
-╰────────────────────────────────────────────────────────╯
+If you are having trouble running tests or downloading courses, simply run:
+```vim
+:TmcDoctor
 ```
 
-**Header behaviour:**
-- Course name is detected **instantly** from the current file path — no network call
-- Auth status (`✓ Connected` / `✗ Auth Required`) is checked async and updates in place
-- `✓ Connected` lights up **green**, `✗ Auth Required` lights up **red**
-- When not authenticated, the cursor auto-focuses the **Login** entry
-
-**Navigation:**
-
-| Key | Action |
-|---|---|
-| `j` / `k` | Move selection up/down |
-| `1`–`5` | Jump directly to that item and execute |
-| `<Enter>` | Execute selected command |
-| `q` / `<Esc>` | Close menu |
-
-The menu closes automatically if you navigate to another window (`<C-w>w`, etc.).
-
-## Exercise Navigation (`:TmcNext` / `:TmcPrev`)
-
-Navigate between exercises without leaving Neovim.
-
-```
-:TmcNext   → opens the next exercise in the course
-:TmcPrev   → opens the previous exercise
-```
-
-**Behaviour:**
-
-| Situation | Result |
-|---|---|
-| Inside a downloaded exercise | Opens the first source file of the adjacent exercise |
-| Exercise not downloaded | Confirm dialog: `[d] Download & open` / `[q] Cancel` |
-| At the first exercise, `:TmcPrev` | `"You are at the first exercise of <course>"` |
-| At the last exercise, `:TmcNext` | `"You have reached the end of <course>! 🎉"` |
-| Not inside `exercises_dir` | Warning to open an exercise file first |
-| Dashboard is open | Scrolls to and flashes the new exercise row |
-
-> **Tip:** Run `:TmcDashboard` at least once before using navigation so the
-> exercise list is cached locally.
+This will launch a dedicated floating diagnostic window that verifies:
+1. **Binary Detection**: Checks if `tmc` is executable on your system.
+2. **Neovim Version**: Ensures you have standard library support.
+3. **Authentication**: Pings the TMC severs to confirm your token is valid.
+4. **Context**: Checks if the file you currently have open geometrically belongs to a TMC exercise folder.
 
 ---
 
-## Diagnostics (`:TmcDoctor`)
-
-Opens a structured diagnostic report in a bottom split (press `q` to close):
-
-```
-TMC Doctor — 2026-02-21 12:01
-======================================
-
-  [1] Binary
-  ──────────────────────────────────────────────────────
-  ✓  Found:   ~/tmc-cli-rust-x86_64-apple-darwin-v1.1.2
-  ✓  Version: tmc-cli-rust 1.1.2
-
-  [2] Neovim
-  ──────────────────────────────────────────────────────
-  ✓  Neovim 0.10.2 (supported)
-
-  [3] Authentication
-  ──────────────────────────────────────────────────────
-  ✓  Connected to TMC server
-
-  [4] Exercises Directory  [5] Cache  [6] Current Context  [7] Configuration
-  ...
-```
-
-| # | Check | Speed | Outcomes |
-|---|---|---|---|
-| 1 | Binary — found + version | Async | ✓ / ✗ not found / ~ no version |
-| 2 | Neovim ≥ 0.9 | Instant | ✓ / ✗ |
-| 3 | TMC server authentication | Async | ✓ connected / ✗ not auth / ? no network |
-| 4 | Exercises directory exists + folder count | Instant | ✓ / ✗ / ~ empty |
-| 5 | Local cache (courses · exercises) | Instant | ✓ / ~ empty / ✗ corrupt |
-| 6 | Current file context (course, exercise, on disk, in cache) | Instant | ✓ / ~ |
-| 7 | Resolved config (`bin`, `exercises_dir`) | Instant | info only |
-
-Checks 1 and 3 run async and update in-place when results arrive — the report appears instantly and fills in.
-
----
-
-`:TmcDashboard` opens a course picker, then renders an exercise list in a vertical split:
-
-```
- MOOC-PROGRAMMING-25
- ═══════════════════
-
- Progress: [██████░░░░]  60%
-
- Exercises:
- ──────────────────────────────
- [x] part01-01_emoticon
- [x] part01-02_seven_brothers
- [ ] part01-03_row_your_boat
-
- [Enter] Open  [t] Test  [s] Submit  [r] Refresh  [q] Close
-```
-
-| Key | Action |
-|---|---|
-| `<Enter>` | Open the exercise source file in a new buffer |
-| `t` | Run `tmc test` on the exercise under the cursor |
-| `s` | Submit the exercise under the cursor |
-| `r` | Force-refresh data from TMC servers |
-| `q` | Close the dashboard |
-
-Move the cursor to an exercise line before pressing `<Enter>`, `t`, or `s`.
-
----
-
-## Exercise directory layout
-
-The plugin expects exercises at:
-
-```
-<exercises_dir>/<course-name>/<exercise-name>/
-```
-
-**macOS default (tmc-cli-rust):**
-```
-~/Library/Application Support/tmc/tmc_cli_rust/<course>/<exercise>
-```
-
----
-
-## Troubleshooting
-
-### Commands not found (`:TmcDashboard`, etc.)
-
-`setup()` was not called. Verify your config contains:
-
-```lua
-require("tmc_plugin").setup({ bin = "/path/to/tmc" })
-```
-
-Then restart Neovim and check again.
-
-### `tmc: command not found`
-
-The binary is not on Neovim's PATH. Pass the full absolute path:
-
-```lua
-require("tmc_plugin").setup({
-  bin = vim.fn.expand("~/tmc-cli-rust-x86_64-apple-darwin-v1.1.2"),
-})
-```
-
-### `Not in a TMC exercise directory`
-
-`:TmcTest` and `:TmcSubmit` check that the current file is inside `exercises_dir`
-before running. If you see this warning, navigate to a file inside your exercise
-directory first, then run the command again.
-
-### `Exercise not downloaded`
-
-The exercise directory was not found at `<exercises_dir>/<course>/<exercise>`.
-Either download the exercise first (press `d` in the dashboard) or update `exercises_dir` in `setup()` to match where your tmc-cli actually saves files.
-
-### Dashboard shows stale data
-
-Press `r` in the dashboard to force a full re-sync from TMC servers.
-
----
-
-## License
-
-MIT
+<p align="center">
+  Built with ☕ by <a href="https://github.com/Shingi-Michael">Shingi-Michael</a><br>
+  Released under the MIT License
+</p>
