@@ -17,7 +17,7 @@
 ---
 
 <a id="features"></a>
-## 🚀 Features
+## Features
 
 **TMC.nvim** brings the University of Helsinki's MOOC programming environment directly into your terminal with zero bloat.
 
@@ -33,7 +33,7 @@
 ---
 
 <a id="requirements"></a>
-## 📦 Requirements
+## Requirements
 
 - **Neovim** `≥ 0.10.0` (Recommended) or `≥ 0.9.0`
 - **tmc-cli-rust**: You must install the [native Rust CLI client](https://github.com/rage/tmc-cli-rust).
@@ -41,7 +41,7 @@
 ---
 
 <a id="installation"></a>
-## 🛠 Installation
+## Installation
 
 > **⚠️ IMPORTANT:** The plugin will not load its user commands unless `setup()` is called. 
 
@@ -71,7 +71,7 @@ use {
 ---
 
 <a id="configuration"></a>
-## ⚙️ Configuration
+## Configuration
 
 `TMC.nvim` attempts to smartly auto-resolve your `exercises_dir` depending on whether you are on Windows, Mac, or Linux. However, you can explicitly override these settings inside your `setup()` call:
 
@@ -94,7 +94,7 @@ require("tmc_plugin").setup({
 ---
 
 <a id="commands"></a>
-## 🎯 Commands
+## Commands
 
 Access the entirety of the plugin by typing `:TmcMenu` to open the central floating command palette!
 
@@ -115,7 +115,7 @@ Access the entirety of the plugin by typing `:TmcMenu` to open the central float
 ---
 
 <a id="health-checks"></a>
-## 🏥 Health Checks (`:TmcDoctor`)
+## Health Checks (`:TmcDoctor`)
 
 If you are having trouble running tests or downloading courses, simply run:
 ```vim
